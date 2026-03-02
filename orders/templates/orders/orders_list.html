@@ -1,0 +1,44 @@
+{% extends "orders/base.html" %}
+{% block title %}Список заказов{% endblock %}
+
+{% block content %}
+<h1>Список заказов (OrderView)</h1>
+<a href="/orders/create/">➕ Создать заказ</a>
+<p class="muted">
+  Это read-model (проекция). Она строится из событий и используется для быстрого чтения.
+</p>
+
+{% if orders %}
+  <table>
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Поставщик</th>
+        <th>Сумма</th>
+        <th>Валюта</th>
+        <th>Статус</th>
+        <th>Обновлён</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td>
+          <a href="{% url 'order_detail_page' o.order_id %}">
+            {{ o.order_id }}
+          </a>
+        </td>
+        <td>{{ o.supplier.name }}</td>
+        <td>{{ o.order_amount }}</td>
+        <td>{{ o.order_currency }}</td>
+        <td>{{ o.status }}</td>
+        <td>{{ o.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>Пока нет заказов в OrderView.</p>
+  <p class="muted">Создай заказ через API, затем обнови страницу.</p>
+{% endif %}
+{% endblock %}

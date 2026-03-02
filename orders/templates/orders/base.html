@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}Orders{% endblock %}</title>
+  <style>
+    body { font-family: sans-serif; margin: 24px; }
+    a { text-decoration: none; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f7f7f7; text-align: left; }
+    .muted { color: #666; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; }
+    .row { display: grid; grid-template-columns: 180px 1fr; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div style="margin-bottom: 16px;">
+    <a href="/orders/">← К списку заказов</a>
+  </div>
+
+  {% block content %}{% endblock %}
+</body>
+</html>

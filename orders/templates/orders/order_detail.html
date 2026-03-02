@@ -1,0 +1,33 @@
+{% extends "orders/base.html" %}
+{% block title %}Заказ {{ order.order_id }}{% endblock %}
+
+{% block content %}
+<h1>Заказ</h1>
+<div style="margin: 12px 0;">
+  <a href="{% url 'order_edit_page' order.order_id %}">✏️ Изменить</a>
+  &nbsp; | &nbsp;
+  <a href="{% url 'order_events_page' order.order_id %}">📜 История событий</a>
+</div>
+
+{% if order.status != "Cancelled" %}
+  <form method="post" action="{% url 'order_cancel_action' order.order_id %}" style="margin: 12px 0;">
+    {% csrf_token %}
+    <input type="text" name="reason" placeholder="Причина отмены (необязательно)" style="width: 360px;">
+    <button type="submit" onclick="return confirm('Точно отменить заказ?');">🛑 Отменить заказ</button>
+  </form>
+{% else %}
+  <p style="color:#b00020;"><b>Заказ отменён.</b> Изменения запрещены доменной логикой.</p>
+{% endif %}
+
+<div class="card">
+  <div class="row"><div class="muted">Order ID</div><div>{{ order.order_id }}</div></div>
+  <div class="row"><div class="muted">Поставщик</div><div>{{ order.supplier.name }}</div></div>
+  <div class="row"><div class="muted">Сумма</div><div>{{ order.order_amount }}</div></div>
+  <div class="row"><div class="muted">Валюта заказа</div><div>{{ order.order_currency }}</div></div>
+  <div class="row"><div class="muted">Базовая валюта</div><div>{{ order.base_currency }}</div></div>
+  <div class="row"><div class="muted">Статус</div><div>{{ order.status }}</div></div>
+  <div class="row"><div class="muted">Создан</div><div>{{ order.created_at }}</div></div>
+  <div class="row"><div class="muted">Обновлён</div><div>{{ order.updated_at }}</div></div>
+</div>
+
+{% endblock %}

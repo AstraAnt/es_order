@@ -1,0 +1,53 @@
+{% extends "orders/base.html" %}
+{% block title %}Создать заказ{% endblock %}
+
+{% block content %}
+<h1>Создать заказ</h1>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div>
+    <label>Поставщик</label><br>
+    <select name="supplier_id" required>
+      {% for s in suppliers %}
+        <option value="{{ s.id }}">{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <br>
+
+  <div>
+    <label>Сумма заказа</label><br>
+    <input type="number" step="0.01" name="order_amount" required>
+  </div>
+
+  <br>
+
+  <div>
+    <label>Валюта заказа</label><br>
+    <select name="order_currency">
+      <option>USD</option>
+      <option>CNY</option>
+      <option>RUB</option>
+    </select>
+  </div>
+
+  <br>
+
+  <div>
+    <label>Базовая валюта</label><br>
+    <select name="base_currency">
+      <option>RUB</option>
+      <option>USD</option>
+      <option>CNY</option>
+    </select>
+  </div>
+
+  <br><br>
+
+  <button type="submit">Создать заказ</button>
+</form>
+
+{% endblock %}

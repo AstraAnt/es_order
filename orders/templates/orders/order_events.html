@@ -1,0 +1,36 @@
+{% extends "orders/base.html" %}
+{% block title %}История событий{% endblock %}
+
+{% block content %}
+<h1>История событий заказа</h1>
+
+<p class="muted">
+  Order ID: <b>{{ order_id }}</b>
+  {% if order %} | Статус проекции: <b>{{ order.status }}</b>{% endif %}
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Версия</th>
+      <th>Когда</th>
+      <th>Тип события</th>
+      <th>Payload</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in events %}
+    <tr>
+      <td>{{ e.aggregate_version }}</td>
+      <td>{{ e.occurred_at }}</td>
+      <td><b>{{ e.event_type }}</b></td>
+      <td><pre style="margin:0;">{{ e.payload|safe }}</pre></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top: 12px;">
+  В Event Sourcing это и есть "истина": состояние заказа можно полностью восстановить, проиграв эти события по порядку.
+</p>
+{% endblock %}
