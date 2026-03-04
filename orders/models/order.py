@@ -7,6 +7,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 
+
+
 class OrderView(models.Model):
     """
     Read model / проекция заказа для быстрого чтения в UI.
@@ -26,13 +28,35 @@ class OrderView(models.Model):
     human_code = models.CharField(max_length=255, unique=True, db_index=True)
 
     # Владелец заказа: Business Unit (Partner с ролью business_unit) (обязательно)
-    business_unit = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_business_unit_views")
+    # business_unit = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_business_unit_views")
 
     # Исполнитель заказа: Buyer — партнёр с ролью buyer (обязательно)
-    buyer = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_buyer_views")
+    # buyer = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_buyer_views")
+
+    business_unit = models.ForeignKey(
+        "orders.Partner",
+        on_delete=models.PROTECT,
+        related_name="orders_as_business_unit_views",  # ✅ уникально
+        null=True, blank=True,  # временно для миграций
+    )
+
+    buyer = models.ForeignKey(
+        "orders.Partner",
+        on_delete=models.PROTECT,
+        related_name="orders_as_buyer_views",  # ✅ уникально
+        null=True, blank=True,
+    )
 
     # Валюта заказа (FK)
-    currency = models.ForeignKey("Currency", on_delete=models.PROTECT, related_name="order_views")
+    # currency = models.ForeignKey("finance.Currency", on_delete=models.PROTECT, related_name="order_views")
+
+    currency = models.ForeignKey(
+        "finance.Currency",
+        on_delete=models.PROTECT,
+        related_name="order_views",
+        null=True,  # временно
+        blank=True,  # временно
+    )
 
     # Дата заказа (бизнес-дата)
     date = models.DateField()
@@ -155,15 +179,26 @@ class PurchaseOrder(models.Model):
     date = models.DateField()
 
     # Business unit (обязателен)
-    business_unit = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_business_unit"
+    # business_unit = models.ForeignKey("Partner", on_delete=models.PROTECT, related_name="orders_as_business_unit"
+    # )
+    #
+    # # Buyer (обязателен)
+    # buyer = models.ForeignKey(
+    #     "Partner", on_delete=models.PROTECT, related_name="orders_as_buyer"
+    # )
+    business_unit = models.ForeignKey(
+        "orders.Partner",
+        on_delete=models.PROTECT,
+        related_name="orders_as_business_unit",  # ✅ отдельное имя
     )
 
-    # Buyer (обязателен)
     buyer = models.ForeignKey(
-        "Partner", on_delete=models.PROTECT, related_name="orders_as_buyer"
+        "orders.Partner",
+        on_delete=models.PROTECT,
+        related_name="orders_as_buyer",  # ✅ отдельное имя
     )
 
-    currency = models.ForeignKey("Currency", on_delete=models.PROTECT, related_name="orders")
+    currency = models.ForeignKey("finance.Currency", on_delete=models.PROTECT, related_name="orders")
 
     notes = models.TextField(blank=True, null=True)
 
@@ -237,13 +272,14 @@ class OrderItem(models.Model):
     planned_fx_to_rub = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
 
+
     class Meta:
         # Жёсткий инвариант: ровно одно заполнено — либо product_sku, либо planned_product
         constraints = [
             models.CheckConstraint(
                 check=(
-                    (Q(product__isnull=False) & Q(planned_product__isnull=True)) |
-                    (Q(product__isnull=True) & Q(planned_product__isnull=False))
+                    (Q(product_sku__isnull=False) & Q(planned_product__isnull=True)) |
+                    (Q(product_sku__isnull=True) & Q(planned_product__isnull=False))
                 ),
                 name="order_item_exactly_one_product_ref",
             )

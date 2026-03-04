@@ -3,7 +3,8 @@
 
 {% block content %}
 <h1>Список заказов (OrderView)</h1>
-<a href="/orders/create/">➕ Создать заказ</a>
+<a href="{% url 'order_create_page' %}">➕ Создать заказ</a>
+
 <p class="muted">
   Это read-model (проекция). Она строится из событий и используется для быстрого чтения.
 </p>
@@ -12,9 +13,12 @@
   <table>
     <thead>
       <tr>
+        <th>Human code</th>
         <th>Order ID</th>
-        <th>Поставщик</th>
-        <th>Сумма</th>
+        <th>Business Unit</th>
+        <th>Buyer</th>
+        <th>Дата</th>
+        <th>Итого (total_amount)</th>
         <th>Валюта</th>
         <th>Статус</th>
         <th>Обновлён</th>
@@ -23,14 +27,17 @@
     <tbody>
       {% for o in orders %}
       <tr>
+        <td><b>{{ o.human_code }}</b></td>
         <td>
           <a href="{% url 'order_detail_page' o.order_id %}">
             {{ o.order_id }}
           </a>
         </td>
-        <td>{{ o.supplier.name }}</td>
-        <td>{{ o.order_amount }}</td>
-        <td>{{ o.order_currency }}</td>
+        <td>{{ o.business_unit.name }} ({{ o.business_unit.short_code }})</td>
+        <td>{{ o.buyer.name }} ({{ o.buyer.short_code }})</td>
+        <td>{{ o.date }}</td>
+        <td>{{ o.total_amount }}</td>
+        <td>{{ o.currency.code }}</td>
         <td>{{ o.status }}</td>
         <td>{{ o.updated_at }}</td>
       </tr>
@@ -38,7 +45,7 @@
     </tbody>
   </table>
 {% else %}
-  <p>Пока нет заказов в OrderView.</p>
-  <p class="muted">Создай заказ через API, затем обнови страницу.</p>
+  <p>Заказов пока нет.</p>
 {% endif %}
+
 {% endblock %}

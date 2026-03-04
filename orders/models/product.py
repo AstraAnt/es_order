@@ -23,7 +23,7 @@ class PlannedProduct(models.Model):
 
     name = models.CharField(max_length=255, help_text="Название планового товара (придуманное нами)")
     image = models.ImageField(upload_to='planned_products/',null=True, blank=True, help_text="Фото планового товара (если есть)")
-    linked_product = models.OneToOneField('Product', on_delete=models.SET_NULL, null=True, blank=True, related_name="planned_match",
+    linked_product = models.OneToOneField('orders.Product', on_delete=models.SET_NULL, null=True, blank=True, related_name="planned_match",
         help_text="Реальный товар, с которым связали данный плановый товар")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Дата создания записи")
 
@@ -93,7 +93,7 @@ class ProductPhoto(models.Model):
         ("tm", "TM"),
     ]
 
-    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name="photos")
+    product = models.ForeignKey('orders.Product', on_delete=models.CASCADE, related_name="photos")
     photo_type = models.CharField(max_length=20, choices=PHOTO_TYPES)
     url = models.URLField()
     local_path = models.CharField(max_length=500, blank=True, null=True)
@@ -106,7 +106,7 @@ class ProductPhoto(models.Model):
 
 
 class ProductSKU(models.Model):
-    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name="skus")
+    product = models.ForeignKey('orders.Product', on_delete=models.CASCADE, related_name="skus")
     barcode = models.CharField(max_length=255, unique=True, primary_key=True, db_index=True)
     tech_size = models.CharField(max_length=255)
     wb_size = models.CharField(max_length=255)
@@ -132,8 +132,8 @@ class ProductLink(models.Model):
     - добавляем флаг is_active и уникальность (plan_product, is_active=True)
     """
 
-    plan_product = models.ForeignKey("PlannedProduct", on_delete=models.CASCADE, related_name="links")
-    product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="planned_links")
+    plan_product = models.ForeignKey("orders.PlannedProduct", on_delete=models.CASCADE, related_name="links")
+    product = models.ForeignKey("orders.Product", on_delete=models.CASCADE, related_name="planned_links")
 
     # кто связал
     linked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

@@ -1,28 +1,3 @@
-# orders/api/views.py
-
-"""
-DRF Views (command + read) в новой архитектуре ES.
-
-Что изменилось по сравнению со старым кодом:
-1) Больше нет:
-   - orders.services.order_service.load_order
-   - orders.services.order_service.append_and_project
-   - orders.projections.runner.ProjectorRunner
-   - orders.projections.order_projector.project_order_event
-
-2) Теперь есть:
-   - Application Service: OrderApplicationService
-   - EventStore: DjangoEventStore
-   - Проектор: OrderProjector (класс), вызывается внутри сервиса автоматически
-
-3) В заказе теперь только:
-   - business_unit (Partner с ролью business_unit)
-   - buyer (Partner с ролью buyer)
-
-4) Товар в позиции заказа определяется только BARCODE (ProductSKU.barcode)
-   (в этих view пока показываем только создание/обновление/отмена заказа + чтение + список событий)
-"""
-
 from uuid import UUID
 
 from django.utils import timezone
@@ -32,19 +7,14 @@ from rest_framework.views import APIView
 
 from orders.application.order_service import OrderApplicationService
 from orders.infrastructure.event_store import DjangoEventStore
-from orders.projections.order_projector import OrderProjector
+from orders.projections.order_projector import OrderProjector  # <--- ВАЖНО: projections
 from orders.domain.commands import CreateOrder, UpdateOrder, CancelOrder
-from orders.models.event import Event
-from orders.models.order import OrderView
+from orders.models import Event, OrderView  # Event/OrderView экспортируются в orders/models/__init__.py
 
 from .serializers import CreateOrderSerializer, UpdateOrderSerializer, CancelOrderSerializer
 
 
-# ----------------------------
-# Инициализация "шины" command-side
-# ----------------------------
-# В простом варианте можно держать singletons на модуль.
-# В проде чаще делают DI через контейнер/настройки проекта.
+# Singleton wiring (простой вариант)
 event_store = DjangoEventStore()
 projector = OrderProjector()
 service = OrderApplicationService(event_store=event_store, projector=projector, now_fn=timezone.now)
@@ -52,34 +22,26 @@ service = OrderApplicationService(event_store=event_store, projector=projector, 
 
 class CreateOrderView(APIView):
     """
-    API-команда создания заказа.
-
-    Поток:
-    1) Валидируем входные данные сериализатором
-    2) Формируем доменную команду CreateOrder
-    3) ApplicationService:
-       - проверяет роли партнёров (BU и Buyer)
-       - восстанавливает агрегат из событий (если есть)
-       - генерит события
-       - сохраняет в EventStore (append)
-       - обновляет read-model через проектор
+    Команда создания заказа.
     """
 
     def post(self, request, order_id):
         ser = CreateOrderSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
 
-        oid = order_id  # уже UUID из <uuid:order_id> в urls
+        oid = order_id  # уже UUID из urls <uuid:order_id>
 
         cmd = CreateOrder(
             order_id=oid,
             human_code=ser.validated_data.get("human_code", "") or "",
 
             date=ser.validated_data["date"],
-            business_unit_id=ser.validated_data["business_unit_id"],  # uuid.UUID
-            buyer_id=ser.validated_data["buyer_id"],                  # uuid.UUID
+            business_unit_id=ser.validated_data["business_unit_id"],
+            buyer_id=ser.validated_data["buyer_id"],
 
+            # Currency PK = code (например "RUB"), поэтому это строка
             currency_id=ser.validated_data["currency_id"],
+
             notes=ser.validated_data.get("notes"),
 
             buyer_commission_percent=ser.validated_data.get("buyer_commission_percent"),
@@ -89,22 +51,22 @@ class CreateOrderView(APIView):
 
         service.create_order(cmd)
 
-        # Возвращаем краткий ответ.
-        # Если нужно вернуть список event_id — можно отдельно query по Event,
-        # но обычно это не обязательно.
-        return Response({"status": "ok", "order_id": str(oid)}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"status": "ok", "order_id": str(oid)},
+            status=status.HTTP_201_CREATED
+        )
 
 
 class UpdateOrderView(APIView):
     """
-    Частичное обновление заказа (шапка).
+    Команда обновления шапки заказа.
     """
 
     def post(self, request, order_id):
         ser = UpdateOrderSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
 
-        oid = order_id  # уже UUID
+        oid = order_id
 
         cmd = UpdateOrder(
             order_id=oid,
@@ -120,7 +82,7 @@ class UpdateOrderView(APIView):
             buyer_commission_amount=ser.validated_data.get("buyer_commission_amount"),
             buyer_delivery_cost=ser.validated_data.get("buyer_delivery_cost"),
 
-            status=ser.validated_data.get("status") or None,
+            status=(ser.validated_data.get("status") or None),
         )
 
         service.update_order(cmd)
@@ -130,7 +92,7 @@ class UpdateOrderView(APIView):
 
 class CancelOrderView(APIView):
     """
-    Отмена заказа.
+    Команда отмены заказа.
     """
 
     def post(self, request, order_id):
@@ -139,10 +101,7 @@ class CancelOrderView(APIView):
 
         oid = order_id
 
-        cmd = CancelOrder(
-            order_id=oid,
-            reason=ser.validated_data.get("reason"),
-        )
+        cmd = CancelOrder(order_id=oid, reason=ser.validated_data.get("reason"))
         service.cancel_order(cmd)
 
         return Response({"status": "ok", "order_id": str(oid)}, status=status.HTTP_200_OK)
@@ -150,10 +109,7 @@ class CancelOrderView(APIView):
 
 class OrderReadView(APIView):
     """
-    Чтение заказа из read-model (OrderView).
-
-    Важно:
-    - Это НЕ реплей событий, а быстрый запрос в проекцию.
+    Чтение из проекции OrderView.
     """
 
     def get(self, request, order_id):
@@ -171,7 +127,6 @@ class OrderReadView(APIView):
         return Response({
             "order_id": str(obj.order_id),
             "human_code": obj.human_code,
-
             "date": obj.date.isoformat(),
             "status": obj.status,
 
@@ -189,7 +144,6 @@ class OrderReadView(APIView):
                 "phone": obj.buyer.phone,
                 "address": obj.buyer.address,
             },
-
             "currency": {
                 "code": obj.currency.code,
                 "name": obj.currency.name,
@@ -197,7 +151,6 @@ class OrderReadView(APIView):
             },
 
             "notes": obj.notes,
-
             "buyer_commission_percent": str(obj.buyer_commission_percent) if obj.buyer_commission_percent is not None else None,
             "buyer_commission_amount": str(obj.buyer_commission_amount) if obj.buyer_commission_amount is not None else None,
             "buyer_delivery_cost": str(obj.buyer_delivery_cost),
@@ -212,7 +165,7 @@ class OrderReadView(APIView):
 
 class EventsList(APIView):
     """
-    Список событий (для отладки/аудита).
+    Отладочный эндпоинт: последние события.
     """
 
     def get(self, request):

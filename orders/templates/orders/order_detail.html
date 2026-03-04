@@ -1,8 +1,9 @@
 {% extends "orders/base.html" %}
-{% block title %}Заказ {{ order.order_id }}{% endblock %}
+{% block title %}Заказ {{ order.human_code }}{% endblock %}
 
 {% block content %}
-<h1>Заказ</h1>
+<h1>Заказ: {{ order.human_code }}</h1>
+
 <div style="margin: 12px 0;">
   <a href="{% url 'order_edit_page' order.order_id %}">✏️ Изменить</a>
   &nbsp; | &nbsp;
@@ -16,18 +17,44 @@
     <button type="submit" onclick="return confirm('Точно отменить заказ?');">🛑 Отменить заказ</button>
   </form>
 {% else %}
-  <p style="color:#b00020;"><b>Заказ отменён.</b> Изменения запрещены доменной логикой.</p>
+  <p style="color:#b00020;"><b>Заказ отменён.</b> Изменения запрещены.</p>
 {% endif %}
 
 <div class="card">
   <div class="row"><div class="muted">Order ID</div><div>{{ order.order_id }}</div></div>
-  <div class="row"><div class="muted">Поставщик</div><div>{{ order.supplier.name }}</div></div>
-  <div class="row"><div class="muted">Сумма</div><div>{{ order.order_amount }}</div></div>
-  <div class="row"><div class="muted">Валюта заказа</div><div>{{ order.order_currency }}</div></div>
-  <div class="row"><div class="muted">Базовая валюта</div><div>{{ order.base_currency }}</div></div>
-  <div class="row"><div class="muted">Статус</div><div>{{ order.status }}</div></div>
-  <div class="row"><div class="muted">Создан</div><div>{{ order.created_at }}</div></div>
-  <div class="row"><div class="muted">Обновлён</div><div>{{ order.updated_at }}</div></div>
-</div>
+  <div class="row"><div class="muted">Дата</div><div>{{ order.date }}</div></div>
+  <div class="row"><div class="muted">Статус</div><div><b>{{ order.status }}</b></div></div>
 
+  <hr style="margin: 12px 0;">
+
+  <div class="row"><div class="muted">Business Unit</div><div>{{ order.business_unit.name }} ({{ order.business_unit.short_code }})</div></div>
+  <div class="row"><div class="muted">Buyer</div><div>{{ order.buyer.name }} ({{ order.buyer.short_code }})</div></div>
+  <div class="row"><div class="muted">Валюта</div><div>{{ order.currency.code }} — {{ order.currency.name }}</div></div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row"><div class="muted">Сумма товаров (items_total)</div><div>{{ order.items_total }}</div></div>
+  <div class="row"><div class="muted">Итого (total_amount)</div><div><b>{{ order.total_amount }}</b></div></div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row"><div class="muted">Комиссия buyer (%)</div>
+    <div>{% if order.buyer_commission_percent != None %}{{ order.buyer_commission_percent }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="row"><div class="muted">Комиссия buyer (сумма)</div>
+    <div>{% if order.buyer_commission_amount != None %}{{ order.buyer_commission_amount }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="row"><div class="muted">Доставка до buyer</div><div>{{ order.buyer_delivery_cost }}</div></div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row"><div class="muted">Заметки</div>
+    <div>{% if order.notes %}{{ order.notes }}{% else %}<span class="muted">—</span>{% endif %}</div>
+  </div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row"><div class="muted">created_at</div><div>{{ order.created_at }}</div></div>
+  <div class="row"><div class="muted">updated_at</div><div>{{ order.updated_at }}</div></div>
+</div>
 {% endblock %}

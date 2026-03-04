@@ -5,8 +5,9 @@
 <h1>История событий заказа</h1>
 
 <p class="muted">
+  Aggregate: <b>{{ aggregate_type }}</b> |
   Order ID: <b>{{ order_id }}</b>
-  {% if order %} | Статус проекции: <b>{{ order.status }}</b>{% endif %}
+  {% if order %} | Human code: <b>{{ order.human_code }}</b> | Статус проекции: <b>{{ order.status }}</b>{% endif %}
 </p>
 
 <table>
@@ -16,6 +17,7 @@
       <th>Когда</th>
       <th>Тип события</th>
       <th>Payload</th>
+      <th>Metadata</th>
     </tr>
   </thead>
   <tbody>
@@ -24,13 +26,14 @@
       <td>{{ e.aggregate_version }}</td>
       <td>{{ e.occurred_at }}</td>
       <td><b>{{ e.event_type }}</b></td>
-      <td><pre style="margin:0;">{{ e.payload|safe }}</pre></td>
+      <td><pre style="margin:0; white-space: pre-wrap;">{{ e.payload }}</pre></td>
+      <td><pre style="margin:0; white-space: pre-wrap;">{{ e.metadata }}</pre></td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 
 <p class="muted" style="margin-top: 12px;">
-  В Event Sourcing это и есть "истина": состояние заказа можно полностью восстановить, проиграв эти события по порядку.
+  В Event Sourcing это и есть "истина": состояние заказа можно полностью восстановить реплеем событий по версии.
 </p>
 {% endblock %}

@@ -2,53 +2,104 @@
 {% block title %}Изменить заказ{% endblock %}
 
 {% block content %}
-<h1>Изменить заказ</h1>
+<h1>Изменить заказ: {{ order.human_code }}</h1>
 
 {% if order.status == "Cancelled" %}
-  <p style="color:#b00020;"><b>Заказ отменён.</b> Изменять нельзя.</p>
+  <p style="color:#b00020;"><b>Заказ отменён.</b> Изменять нельзя (домен запретит).</p>
 {% endif %}
 
-<form method="post">
+<form method="post" class="card">
   {% csrf_token %}
 
-  <div>
-    <label>Поставщик</label><br>
-    <select name="supplier_id">
-      <option value="">(не менять)</option>
-      {% for s in suppliers %}
-        <option value="{{ s.id }}" {% if s.id == order.supplier.id %}selected{% endif %}>{{ s.name }}</option>
-      {% endfor %}
-    </select>
+  <div class="row">
+    <div class="muted">Дата</div>
+    <div><input type="date" name="date" value="{{ order.date|date:'Y-m-d' }}"></div>
   </div>
 
-  <br>
-
-  <div>
-    <label>Сумма заказа</label><br>
-    <input type="number" step="0.01" name="order_amount" value="{{ order.order_amount }}">
+  <div class="row">
+    <div class="muted">Business Unit</div>
+    <div>
+      <select name="business_unit_id">
+        {% for p in business_units %}
+          <option value="{{ p.id }}" {% if p.id == order.business_unit.id %}selected{% endif %}>
+            {{ p.name }} ({{ p.short_code }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
-  <br>
-
-  <div>
-    <label>Валюта заказа</label><br>
-    <select name="order_currency">
-      <option value="">(не менять)</option>
-      <option value="USD" {% if order.order_currency == "USD" %}selected{% endif %}>USD</option>
-      <option value="CNY" {% if order.order_currency == "CNY" %}selected{% endif %}>CNY</option>
-      <option value="RUB" {% if order.order_currency == "RUB" %}selected{% endif %}>RUB</option>
-    </select>
+  <div class="row">
+    <div class="muted">Buyer</div>
+    <div>
+      <select name="buyer_id">
+        {% for p in buyers %}
+          <option value="{{ p.id }}" {% if p.id == order.buyer.id %}selected{% endif %}>
+            {{ p.name }} ({{ p.short_code }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
-  <br>
-
-  <div>
-    <label>Статус (редко, на будущее)</label><br>
-    <input type="text" name="status" value="{{ order.status }}">
+  <div class="row">
+    <div class="muted">Валюта</div>
+    <div>
+      <select name="currency_code">
+        {% for c in currencies %}
+          <option value="{{ c.code }}" {% if c.code == order.currency.code %}selected{% endif %}>
+            {{ c.code }} — {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
-  <br><br>
+  <hr style="margin: 12px 0;">
 
-  <button type="submit">Сохранить</button>
+  <div class="row">
+    <div class="muted">Комиссия buyer (%)</div>
+    <div><input type="number" step="0.01" name="buyer_commission_percent"
+                value="{% if order.buyer_commission_percent != None %}{{ order.buyer_commission_percent }}{% endif %}"></div>
+  </div>
+
+  <div class="row">
+    <div class="muted">Комиссия buyer (сумма)</div>
+    <div><input type="number" step="0.01" name="buyer_commission_amount"
+                value="{% if order.buyer_commission_amount != None %}{{ order.buyer_commission_amount }}{% endif %}"></div>
+  </div>
+
+  <div class="row">
+    <div class="muted">Доставка до buyer</div>
+    <div><input type="number" step="0.01" name="buyer_delivery_cost" value="{{ order.buyer_delivery_cost }}"></div>
+  </div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row">
+    <div class="muted">Статус</div>
+    <div>
+      <select name="status">
+        <option value="">(не менять)</option>
+        <option value="Active">Active</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <div class="muted" style="font-size: 12px;">
+        Обычно статус меняется доменно (CancelOrder), но оставлено для админских случаев.
+      </div>
+    </div>
+  </div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="row">
+    <div class="muted">Заметки</div>
+    <div><textarea name="notes" rows="3" style="width: 520px;">{% if order.notes %}{{ order.notes }}{% endif %}</textarea></div>
+  </div>
+
+  <div style="margin-top: 12px;">
+    <button type="submit">💾 Сохранить</button>
+  </div>
 </form>
+
 {% endblock %}

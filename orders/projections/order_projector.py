@@ -1,3 +1,5 @@
+# orders/projections/order_projector.py
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -23,15 +25,12 @@ from orders.models import Partner
 from finance.models import Currency
 
 
+AGGREGATE_TYPE = "PurchaseOrder"
+
+
 class OrderProjector:
     """
-    Проектор обновляет read-модели на основе доменных событий.
-
-    Обновляем:
-    - OrderView (шапка заказа)
-    - OrderItemView (строки заказа)
-
-    И пересчитываем totals в OrderView.
+    Новый проектор (класс): принимает DomainEvent и обновляет read-модели.
     """
 
     @transaction.atomic
@@ -61,7 +60,6 @@ class OrderProjector:
                 self._recalc_totals(e.aggregate_id)
 
             elif e.event_type == ORDER_ITEM_FX_PLANNED_SET:
-                # FX не влияет на totals qty*price, но влияет на планы/отчеты (если нужно)
                 self._on_item_fx_set(e)
 
             elif e.event_type == ORDER_ITEM_RESOLVED_TO_BARCODE:
@@ -77,7 +75,8 @@ class OrderProjector:
 
             business_unit=Partner.objects.get(id=p["business_unit_id"]),
             buyer=Partner.objects.get(id=p["buyer_id"]),
-            currency=Currency.objects.get(id=p["currency_id"]),
+            # Currency PK = code => здесь currency_id это строка типа "RUB"
+            currency=Currency.objects.get(code=p["currency_id"]),
 
             date=p["date"],
             notes=p.get("notes"),
@@ -106,7 +105,7 @@ class OrderProjector:
         if "buyer_id" in p:
             ov.buyer = Partner.objects.get(id=p["buyer_id"])
         if "currency_id" in p:
-            ov.currency = Currency.objects.get(id=p["currency_id"])
+            ov.currency = Currency.objects.get(code=p["currency_id"])
 
         if "buyer_commission_percent" in p:
             ov.buyer_commission_percent = Decimal(p["buyer_commission_percent"]) if p["buyer_commission_percent"] is not None else None
@@ -120,8 +119,6 @@ class OrderProjector:
 
         ov.full_clean()
         ov.save()
-
-        # Параметры комиссии могли измениться => totals могут измениться
         self._recalc_totals(e.aggregate_id)
 
     def _on_cancelled(self, e: DomainEvent) -> None:
@@ -137,11 +134,8 @@ class OrderProjector:
             item_id=p["item_id"],
             defaults={
                 "order_id": e.aggregate_id,
-
-                # ключевое: barcode
                 "product_barcode": p.get("product_barcode"),
                 "planned_product_id": p.get("planned_product_id"),
-
                 "quantity": Decimal(p["quantity"]),
                 "price": Decimal(p["price"]),
                 "production_days": int(p.get("production_days", 0)),
@@ -186,18 +180,7 @@ class OrderProjector:
     # ---------- TOTALS ----------
 
     def _recalc_totals(self, order_id: UUID) -> None:
-        """
-        Пересчёт totals заказа по строкам.
-
-        items_total = SUM(qty*price) по строкам, где is_removed=False
-        total_amount = items_total + комиссия + доставка
-
-        Почему так:
-        - В ES домен можно не нагружать расчётами для UI
-        - Проекция удобна и быстра
-        """
         ov = OrderView.objects.select_for_update().get(order_id=order_id)
-
         items = OrderItemView.objects.filter(order_id=order_id, is_removed=False)
         items_total = sum((i.subtotal for i in items), Decimal("0"))
         ov.items_total = items_total
@@ -210,3 +193,35 @@ class OrderProjector:
 
         ov.total_amount = items_total + commission + (ov.buyer_delivery_cost or Decimal("0"))
         ov.save()
+
+
+# ---------------------------------------------------------------------
+# Совместимость со старой системой:
+# - раньше runner дергал project_order_event(EventRow)
+# - теперь проектор класс и принимает DomainEvent
+# ---------------------------------------------------------------------
+
+_projector_singleton = OrderProjector()
+
+
+def project_order_event(event_row) -> None:
+    """
+    Совместимость со старым ProjectorRunner.
+
+    На вход принимает запись из таблицы Event (ORM-модель),
+    конвертирует её в DomainEvent и отдаёт в новый проектор.
+
+    Важно:
+    - игнорируем события не нашего агрегата (если в EventStore будут другие агрегаты)
+    """
+    if event_row.aggregate_type != AGGREGATE_TYPE:
+        return
+
+    de = DomainEvent(
+        event_type=event_row.event_type,
+        aggregate_id=event_row.aggregate_id,
+        occurred_at=event_row.occurred_at,
+        payload=event_row.payload,
+        metadata=event_row.metadata,
+    )
+    _projector_singleton.project([de])
