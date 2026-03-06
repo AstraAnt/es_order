@@ -4,14 +4,18 @@ from dataclasses import replace
 from datetime import datetime
 from typing import Callable, List
 from uuid import UUID
+import re
+
+from django.core.exceptions import ValidationError
 
 from orders.domain.order import Order
 from orders.domain.events import DomainEvent
 from orders.infrastructure.event_store import DjangoEventStore
 from orders.projections.order_projector import OrderProjector
-
 from orders.application.validators import require_partner_role
 from orders.application.human_code import generate_human_code
+from orders.models.order import PurchaseOrder
+
 
 
 AGGREGATE_TYPE = "PurchaseOrder"
@@ -54,7 +58,26 @@ class OrderApplicationService:
         bu = require_partner_role(cmd.business_unit_id, "business_unit", "business_unit_id")
         buyer = require_partner_role(cmd.buyer_id, "buyer", "buyer_id")
 
-        if not cmd.human_code:
+        # 1. Если код введён вручную — валидируем и используем как есть
+        if cmd.human_code and cmd.human_code.strip():
+            human_code = cmd.human_code.strip().upper()
+
+            if not re.fullmatch(r"[A-Z0-9._\-]+", human_code):
+                raise ValidationError(
+                    {"human_code": "Код заказа может содержать только A-Z, 0-9, точку, дефис и нижнее подчёркивание."})
+
+            # уникальность
+            if PurchaseOrder.objects.filter(human_code=human_code).exists():
+                raise ValidationError({"human_code": "Такой код заказа уже существует."})
+
+            # базовая валидация длины
+            if len(human_code) > 255:
+                raise ValidationError({"human_code": "Код заказа слишком длинный."})
+
+            cmd = replace(cmd, human_code=human_code)
+
+        # 2. Если код пустой — генерируем автоматически
+        else:
             cmd = replace(cmd, human_code=generate_human_code(
                 business_unit_code=bu.short_code,
                 buyer_code=buyer.short_code,
