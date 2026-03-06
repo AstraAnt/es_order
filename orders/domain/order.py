@@ -66,7 +66,8 @@ class OrderState:
     date: Optional[date] = None
     business_unit_id: Optional[UUID] = None
     buyer_id: Optional[UUID] = None
-    currency_id: Optional[UUID] = None
+    # currency_id: Optional[UUID] = None
+    currency_id: Optional[str] = None
 
     notes: Optional[str] = None
 
@@ -371,7 +372,8 @@ class Order:
 
             self.state.business_unit_id = UUID(payload["business_unit_id"])
             self.state.buyer_id = UUID(payload["buyer_id"])
-            self.state.currency_id = UUID(payload["currency_id"])
+            # self.state.currency_id = UUID(payload["currency_id"])
+            self.state.currency_id = payload["currency_id"]
 
             self.state.notes = payload.get("notes")
 
@@ -394,7 +396,8 @@ class Order:
             if "buyer_id" in payload:
                 self.state.buyer_id = UUID(payload["buyer_id"])
             if "currency_id" in payload:
-                self.state.currency_id = UUID(payload["currency_id"])
+                # self.state.currency_id = UUID(payload["currency_id"])
+                self.state.currency_id = payload["currency_id"]
 
             if "buyer_commission_percent" in payload:
                 v = payload["buyer_commission_percent"]

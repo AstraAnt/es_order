@@ -26,7 +26,7 @@ class CreateOrder:
     business_unit_id: UUID          # Partner(role=business_unit) обязателен
     buyer_id: UUID                  # Partner(role=buyer) обязателен
 
-    currency_id: UUID
+    currency_id: str
     notes: Optional[str] = None
 
     buyer_commission_percent: Optional[Decimal] = None
@@ -59,7 +59,8 @@ class UpdateOrder:
 
     business_unit_id: Optional[UUID] = None
     buyer_id: Optional[UUID] = None
-    currency_id: Optional[UUID] = None
+    # currency_id: Optional[UUID] = None
+    currency_id: Optional[str] = None
 
     buyer_commission_percent: Optional[Decimal] = None
     buyer_commission_amount: Optional[Decimal] = None
