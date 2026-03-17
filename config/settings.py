@@ -42,13 +42,15 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # "users.context_processors.current_business_unit",
+                "orders.context_processors.active_business_unit_context",
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-AUTH_USER_MODEL = "users.User"
+
 
 # --- SQLite фиксированно (упрощение) ---
 DATABASES = {
@@ -72,3 +74,9 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
 }
+
+AUTH_USER_MODEL = "users.User"
+
+LOGIN_URL = "users:login"
+LOGIN_REDIRECT_URL = "users:post_login"
+LOGOUT_REDIRECT_URL = "users:login"
