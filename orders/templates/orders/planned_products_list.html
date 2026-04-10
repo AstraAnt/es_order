@@ -1,0 +1,121 @@
+{% extends "orders/base.html" %}
+{% block title %}Плановые товары{% endblock %}
+
+{% block content %}
+<style>
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .search-form {
+    display: grid;
+    grid-template-columns: minmax(240px, 360px) auto;
+    gap: 10px;
+  }
+  .planned-grid {
+    display: grid;
+    gap: 18px;
+  }
+  .planned-card {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: start;
+  }
+  .planned-image {
+    width: 140px;
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f4f3ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .planned-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .planned-meta {
+    display: grid;
+    gap: 10px;
+  }
+  @media (max-width: 760px) {
+    .search-form {
+      grid-template-columns: 1fr;
+    }
+    .planned-card {
+      grid-template-columns: 1fr;
+    }
+    .planned-image {
+      width: 100%;
+      max-width: 220px;
+    }
+  }
+</style>
+
+{% load static %}
+{% get_media_prefix as media_prefix %}
+
+<p class="page-kicker">Каталог / плановые товары</p>
+<h1>Плановые товары.</h1>
+<p class="muted">Здесь можно создать новый плановый товар, загрузить фото и перейти к его корректировке.</p>
+
+<div class="toolbar">
+  <form class="search-form" method="get">
+    <input type="text" name="q" value="{{ planned_products_query }}" placeholder="Поиск по названию или связанному реальному товару">
+    <button type="submit">Найти</button>
+  </form>
+  <a class="action-link" href="{% url 'planned_product_create_page' %}">Создать плановый товар</a>
+</div>
+
+{% if planned_products %}
+  <section class="planned-grid">
+    {% for planned in planned_products %}
+      <article class="card planned-card">
+        <div class="planned-image">
+          {% if planned.image %}
+            <img src="{{ media_prefix }}{{ planned.image.name }}" alt="{{ planned.name }}">
+          {% else %}
+            <span>Фото не загружено</span>
+          {% endif %}
+        </div>
+        <div class="planned-meta">
+          <div>
+            <h3>{{ planned.name }}</h3>
+            <p class="muted">Создан: {{ planned.created_at|date:"d.m.Y H:i" }}</p>
+          </div>
+          <div>
+            {% if planned.linked_product %}
+              <span class="badge">Связан с {{ planned.linked_product.seller_sku }}</span>
+            {% else %}
+              <span class="badge warn">Пока не сопоставлен</span>
+            {% endif %}
+          </div>
+        </div>
+        <div style="display:grid;gap:10px;">
+          <a class="ghost-link" href="{% url 'planned_product_edit_page' planned.id %}">Корректировать</a>
+          <a class="ghost-link" href="{% url 'product_matching_page' %}">Сопоставить</a>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <div class="card">
+    {% if planned_products_query %}
+      <h3>Ничего не найдено</h3>
+      <p class="muted">Попробуйте другой запрос по названию планового товара или связанному реальному товару.</p>
+    {% else %}
+      <h3>Плановых товаров пока нет</h3>
+      <p class="muted">Создайте первый плановый товар, чтобы использовать его в заказах и позже сопоставить с реальным SKU.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

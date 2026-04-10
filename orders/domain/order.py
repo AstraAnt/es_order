@@ -37,7 +37,7 @@ class OrderItemState:
     item_id: UUID
 
     product_barcode: Optional[str] = None
-    planned_product_id: Optional[UUID] = None
+    planned_product_id: Optional[int] = None
 
     quantity: Decimal = Decimal("0")
     price: Decimal = Decimal("0")
@@ -421,7 +421,7 @@ class Order:
             self.state.items[item_id] = OrderItemState(
                 item_id=item_id,
                 product_barcode=payload.get("product_barcode"),
-                planned_product_id=UUID(pp) if pp is not None else None,
+                planned_product_id=int(pp) if pp is not None else None,
                 quantity=Decimal(payload["quantity"]),
                 price=Decimal(payload["price"]),
                 production_days=int(payload.get("production_days", 0)),

@@ -1,0 +1,147 @@
+{% extends "orders/base.html" %}
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<style>
+  .lead {
+    font-size: 1.08rem;
+    color: #3f4148;
+    max-width: 60ch;
+    margin-bottom: 24px;
+  }
+  .quick-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+  .stats {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+    margin-bottom: 30px;
+  }
+  .stat {
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfbf8;
+  }
+  .stat-label {
+    display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.88rem;
+  }
+  .stat-value {
+    font-size: clamp(1.4rem, 3vw, 2.2rem); font-weight: 700; line-height: 1;
+  }
+  .sections {
+    display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px;
+  }
+  .section-card {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .section-card h3 {
+    margin: 0 0 8px; font-size: 1.45rem;
+  }
+  .mini-list { display: grid; gap: 0; margin-top: 16px; border-top: 1px solid var(--line); }
+  .mini-item {
+    display: flex; justify-content: space-between; gap: 16px; align-items: start;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .mini-item strong { display: block; margin-bottom: 4px; font-size: 1.05rem; }
+  .status-pill {
+    display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: #4d5bc2; font-size: 0.8rem; white-space: nowrap;
+  }
+  .note-list { display: grid; gap: 14px; margin-top: 16px; }
+  .note {
+    padding: 14px 0 14px 16px;
+    border-left: 2px solid var(--line-strong);
+  }
+  @media (max-width: 860px) {
+    .sections { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .stats { grid-template-columns: 1fr; }
+    .mini-item { flex-direction: column; }
+  }
+</style>
+
+<p class="page-kicker">Главная / обзор</p>
+<h1>Управляйте закупками с одной точки входа.</h1>
+<p class="lead">
+  Здесь собраны быстрые переходы, текущее состояние заказов и последние изменения в проекции.
+  Страница работает как операционная база знаний для ежедневной работы с заказами.
+</p>
+
+<div class="quick-actions">
+  <a class="action-link" href="{% url 'order_create_page' %}">Создать заказ</a>
+  <a class="ghost-link" href="{% url 'orders_list_page' %}">Открыть список заказов</a>
+  <form method="post" action="{% url 'wb_sync_now_action' %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit">Синк сейчас</button>
+  </form>
+</div>
+
+{% if active_business_unit %}
+  <p class="muted" style="margin-top:-10px;margin-bottom:24px;">
+    Быстрый синк запускается для <strong>{{ active_business_unit.name }}</strong> с автоматической загрузкой фото.
+  </p>
+{% endif %}
+
+<div class="stats">
+  <article class="stat">
+    <span class="stat-label">Всего заказов</span>
+    <div class="stat-value">{{ orders_total }}</div>
+  </article>
+  <article class="stat">
+    <span class="stat-label">Активные</span>
+    <div class="stat-value">{{ active_orders }}</div>
+  </article>
+  <article class="stat">
+    <span class="stat-label">Отменённые</span>
+    <div class="stat-value">{{ cancelled_orders }}</div>
+  </article>
+  <article class="stat">
+    <span class="stat-label">Сумма заказов</span>
+    <div class="stat-value">{{ total_amount }}</div>
+  </article>
+</div>
+
+<section class="sections">
+  <article class="section-card">
+    <h3>Последние изменения</h3>
+    <p class="muted">Пять заказов, которые менялись последними.</p>
+
+    {% if recent_orders %}
+      <div class="mini-list">
+        {% for order in recent_orders %}
+          <a class="mini-item" href="{% url 'order_detail_page' order.order_id %}">
+            <div>
+              <strong>{{ order.human_code }}</strong>
+              <div class="muted">
+                {{ order.business_unit.name }} · {{ order.buyer.name }} · {{ order.total_amount }} {{ order.currency.code }}
+              </div>
+            </div>
+            <span class="status-pill">{{ order.status }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Заказов пока нет. Начните с создания первого заказа.</p>
+    {% endif %}
+  </article>
+
+  <article class="section-card">
+    <h3>Контекст системы</h3>
+    <p class="muted">Короткая сводка по данным, с которыми работает UI.</p>
+
+    <div class="note-list">
+      <div class="note">
+        <strong>{{ business_units_total }}</strong> активных business unit доступны для оформления заказов.
+      </div>
+      <div class="note">
+        <strong>{{ buyers_total }}</strong> активных buyer-партнёров доступны в формах создания и редактирования.
+      </div>
+      <div class="note">
+        Веб-интерфейс читает данные из <strong>OrderView</strong>, поэтому список и карточки открываются быстро.
+      </div>
+    </div>
+  </article>
+</section>
+{% endblock %}

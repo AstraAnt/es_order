@@ -42,7 +42,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # "users.context_processors.current_business_unit",
                 "orders.context_processors.active_business_unit_context",
             ],
         },
@@ -50,13 +49,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-
+AUTH_USER_MODEL = "users.User"
 
 # --- SQLite фиксированно (упрощение) ---
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        "OPTIONS": {
+            "timeout": 20,
+        },
     }
 }
 
@@ -66,6 +68,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -74,9 +78,3 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
 }
-
-AUTH_USER_MODEL = "users.User"
-
-LOGIN_URL = "users:login"
-LOGIN_REDIRECT_URL = "users:post_login"
-LOGOUT_REDIRECT_URL = "users:login"

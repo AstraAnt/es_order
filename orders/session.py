@@ -37,7 +37,7 @@ def get_user_available_business_units(user):
     Возвращает список Business Unit, доступных пользователю.
     """
     if not user.is_authenticated:
-        return BusinessUnit.objects.none()
+        return BusinessUnit.objects.filter(is_active=True).order_by("name")
 
     return (
         BusinessUnit.objects
@@ -53,7 +53,10 @@ def get_user_available_business_units(user):
 
 def user_can_access_business_unit(user, business_unit_id) -> bool:
     if not user.is_authenticated:
-        return False
+        return BusinessUnit.objects.filter(
+            id=business_unit_id,
+            is_active=True,
+        ).exists()
 
     return UserBusinessUnitAccess.objects.filter(
         user=user,

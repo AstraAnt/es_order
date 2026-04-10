@@ -1,0 +1,34 @@
+{% extends "orders/base.html" %}
+{% block title %}Выбор Business Unit{% endblock %}
+
+{% block content %}
+<p class="page-kicker">Настройки / business unit</p>
+<h1>Выбор активного Business Unit</h1>
+<p class="muted">
+  Выбранный Business Unit сохраняется в сессии и используется при создании новых заказов.
+</p>
+
+{% if error %}
+  <div class="card" style="border-color:#e7b5b5;color:#9c3434;margin-bottom:18px;">
+    {{ error }}
+  </div>
+{% endif %}
+
+<form method="post" class="card">
+  {% csrf_token %}
+  <div class="row">
+    <div class="muted">Активный BU</div>
+    <div>
+      <select name="business_unit_id">
+        <option value="">Не выбран</option>
+        {% for bu in available_business_units %}
+          <option value="{{ bu.id }}" {% if active_business_unit and active_business_unit.id == bu.id %}selected{% endif %}>
+            {{ bu.name }} ({{ bu.short_code }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <button type="submit">Сохранить выбор</button>
+</form>
+{% endblock %}

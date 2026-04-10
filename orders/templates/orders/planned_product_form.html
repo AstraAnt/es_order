@@ -1,0 +1,134 @@
+{% extends "orders/base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+  .form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+    align-items: start;
+  }
+  .form-stack {
+    display: grid;
+    gap: 18px;
+  }
+  .preview-card {
+    display: grid;
+    gap: 16px;
+  }
+  .preview-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: #f4f3ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .notice {
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    border: 1px solid #e7b5b5;
+    background: #fff4f4;
+    color: #9c3434;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .checkbox-row input {
+    width: auto;
+  }
+  @media (max-width: 860px) {
+    .form-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+{% load static %}
+{% get_media_prefix as media_prefix %}
+
+<p class="page-kicker">{{ page_kicker }}</p>
+<h1>{{ page_title }}</h1>
+<p class="muted">Название используется в заказах до появления реального товара. Фото можно загрузить сразу или обновить позже.</p>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="card" style="margin-bottom:18px;">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+{% if form_error %}
+  <div class="notice">{{ form_error }}</div>
+{% endif %}
+
+<section class="form-layout">
+  <form class="card form-stack" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div>
+      <label for="planned_product_name">Название</label>
+      <input
+        id="planned_product_name"
+        name="name"
+        value="{% if form_data.name %}{{ form_data.name }}{% elif planned_product %}{{ planned_product.name }}{% endif %}"
+        placeholder="Например, футболка basic black"
+      >
+    </div>
+    <div>
+      <label for="planned_product_image">Фото</label>
+      <input id="planned_product_image" name="image" type="file" accept="image/*">
+      <p class="muted" style="margin-top:8px;">Поддерживается загрузка нового изображения для карточки планового товара.</p>
+    </div>
+    {% if planned_product and planned_product.image %}
+      <label class="checkbox-row" for="remove_image">
+        <input id="remove_image" name="remove_image" type="checkbox">
+        <span>Удалить текущее фото</span>
+      </label>
+    {% endif %}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button type="submit">{{ submit_label }}</button>
+      <a class="ghost-link" href="{% url 'planned_products_page' %}">Назад к списку</a>
+      {% if planned_product %}
+        <a class="ghost-link" href="{% url 'product_matching_page' %}">Сопоставление</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <aside class="card preview-card">
+    <h3>Превью</h3>
+    <div class="preview-image">
+      {% if planned_product and planned_product.image %}
+        <img src="{{ media_prefix }}{{ planned_product.image.name }}" alt="{{ planned_product.name }}">
+      {% else %}
+        <span>Фото пока не загружено</span>
+      {% endif %}
+    </div>
+    {% if planned_product %}
+      <div class="muted">
+        ID: {{ planned_product.id }}<br>
+        Создан: {{ planned_product.created_at|date:"d.m.Y H:i" }}
+      </div>
+      <div>
+        {% if planned_product.linked_product %}
+          <span class="badge">Связан с {{ planned_product.linked_product.seller_sku }}</span>
+        {% else %}
+          <span class="badge warn">Пока не сопоставлен</span>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="muted">После создания здесь появится превью и статус сопоставления.</p>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

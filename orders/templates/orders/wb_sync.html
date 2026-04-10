@@ -1,0 +1,212 @@
+{% extends "orders/base.html" %}
+{% block title %}WB синк{% endblock %}
+
+{% block content %}
+<style>
+  .sync-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .form-grid {
+    display: grid;
+    gap: 14px;
+  }
+  .checkbox-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .checkbox-row input {
+    width: auto;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfbf8;
+  }
+  .summary-card span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .runs-table {
+    margin-top: 18px;
+  }
+  .logs-list {
+    display: grid;
+    gap: 12px;
+  }
+  .log-item {
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .log-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .alert {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #f7f6f2;
+  }
+  .alert.error {
+    border-color: #efc8c2;
+    background: #fff4f2;
+  }
+  @media (max-width: 980px) {
+    .sync-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 720px) {
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<p class="page-kicker">Wildberries / синк каталога</p>
+<h1>Синхронизация каталога Wildberries.</h1>
+<p class="muted">
+  Синк запускается для активного business unit из сессии и использует его токен доступа.
+</p>
+
+{% if sync_message %}
+  <div class="alert">{{ sync_message }}</div>
+{% endif %}
+{% if sync_error %}
+  <div class="alert error">{{ sync_error }}</div>
+{% endif %}
+
+<section class="summary-grid">
+  <article class="summary-card">
+    <span>Активный BU</span>
+    <strong>{% if active_business_unit %}{{ active_business_unit.name }} ({{ active_business_unit.short_code }}){% else %}Не выбран{% endif %}</strong>
+  </article>
+  <article class="summary-card">
+    <span>Импортировано товаров</span>
+    <strong>{{ imported_products_count }}</strong>
+  </article>
+  <article class="summary-card">
+    <span>Фото в каталоге</span>
+    <strong>{{ photos_count }}</strong>
+  </article>
+</section>
+
+<section class="sync-layout">
+  <article class="card">
+    <h3>Запустить синк</h3>
+    <p class="muted">Если BU не выбран, сначала переключите его в верхней панели.</p>
+
+    <form class="form-grid" method="post">
+      {% csrf_token %}
+      <div>
+        <label for="token_name">Имя токена</label>
+        <input id="token_name" name="token_name" value="{{ token_name_value }}" placeholder="default">
+      </div>
+      <div>
+        <label for="max_pages">Максимум страниц</label>
+        <input id="max_pages" name="max_pages" type="number" min="1" placeholder="без лимита">
+      </div>
+      <label class="checkbox-row" for="download_photos">
+        <input id="download_photos" name="download_photos" type="checkbox" checked>
+        <span>Скачать фото после импорта</span>
+      </label>
+      <label class="checkbox-row" for="overwrite_photos">
+        <input id="overwrite_photos" name="overwrite_photos" type="checkbox">
+        <span>Перезаписать уже скачанные фото</span>
+      </label>
+      <button type="submit">Запустить синк</button>
+    </form>
+  </article>
+
+  <article>
+    <div class="card">
+      <h3>Последние запуски</h3>
+      {% if recent_runs %}
+        <table class="runs-table">
+          <thead>
+            <tr>
+              <th>Когда</th>
+              <th>Статус</th>
+              <th>Карточки</th>
+              <th>Фото</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for run in recent_runs %}
+              <tr>
+                <td>{{ run.started_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                  <span class="badge{% if run.status == 'failed' %} error{% elif run.status == 'partial' %} warn{% endif %}">
+                    {{ run.get_status_display }}
+                  </span>
+                </td>
+                <td>{{ run.cards_total }} / ошибок {{ run.failed_cards }}</td>
+                <td>{{ run.photos_downloaded }} / ошибок {{ run.photos_failed }}</td>
+                <td><a href="?run_id={{ run.id }}">Открыть лог</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">Запусков синка для выбранного BU пока нет.</p>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Лог запуска</h3>
+      {% if selected_run %}
+        <p class="muted">
+          Запуск {{ selected_run.started_at|date:"d.m.Y H:i" }} · страниц {{ selected_run.pages_total }} ·
+          карточек {{ selected_run.cards_total }} · ошибок по карточкам {{ selected_run.failed_cards }}.
+        </p>
+        {% if selected_run.error_message %}
+          <div class="alert error">{{ selected_run.error_message }}</div>
+        {% endif %}
+        {% if selected_logs %}
+          <div class="logs-list">
+            {% for log in selected_logs %}
+              <article class="log-item">
+                <div class="log-meta">
+                  <span class="badge{% if log.level == 'error' %} error{% endif %}">{{ log.get_level_display }}</span>
+                  <span class="badge">{{ log.get_stage_display }}</span>
+                  <span class="muted">{{ log.created_at|date:"d.m.Y H:i:s" }}</span>
+                  {% if log.entity_label %}
+                    <strong>{{ log.entity_label }}</strong>
+                  {% elif log.entity_id %}
+                    <strong>{{ log.entity_id }}</strong>
+                  {% endif %}
+                </div>
+                <div>{{ log.message }}</div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">Подробный лог пока пуст.</p>
+        {% endif %}
+      {% else %}
+        <p class="muted">После первого запуска здесь появятся подробные записи по карточкам и фото.</p>
+      {% endif %}
+    </div>
+  </article>
+</section>
+{% endblock %}

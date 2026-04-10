@@ -1,0 +1,305 @@
+{% extends "orders/base.html" %}
+{% block title %}Сопоставление товаров{% endblock %}
+
+{% block content %}
+{% load static %}
+<style>
+  .match-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .match-list {
+    display: grid;
+    gap: 18px;
+  }
+  .match-card {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+  }
+  .match-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .planned-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .planned-link:hover h3 {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .match-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .match-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(240px, 300px) auto;
+    gap: 14px;
+    align-items: end;
+  }
+  .search-stack {
+    display: grid;
+    gap: 8px;
+  }
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .preview-box {
+    display: grid;
+    gap: 10px;
+  }
+  .preview-frame {
+    width: 108px;
+    height: 108px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: #f4f3ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .preview-empty {
+    width: 100%;
+    height: 100%;
+    border-radius: 18px;
+    border: 1px solid #d9d5cb;
+    background: linear-gradient(180deg, #fbfaf7 0%, #f0ede6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+    color: #7a7d86;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .preview-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .notice {
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #f7f6f2;
+  }
+  .notice.error {
+    border-color: #e7b5b5;
+    background: #fff4f4;
+    color: #9c3434;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: #4d5bc2;
+    font-size: 0.8rem;
+  }
+  @media (max-width: 900px) {
+    .match-grid { grid-template-columns: 1fr; }
+    .match-card-header { flex-direction: column; }
+    .preview-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% get_media_prefix as media_prefix %}
+
+<p class="page-kicker">Каталог / сопоставление товаров</p>
+<div class="match-head">
+  <div>
+    <h1>Сопоставление планового и реального товара</h1>
+    <p class="muted">
+      Здесь можно связать плановый товар, который использовался в заказах, с реальным товаром из каталога.
+    </p>
+  </div>
+  <a class="ghost-link" href="{% url 'order_create_page' %}">Перейти к созданию заказа</a>
+</div>
+
+{% if matching_message %}
+  <div class="notice">{{ matching_message }}</div>
+{% endif %}
+{% if matching_error %}
+  <div class="notice error">{{ matching_error }}</div>
+{% endif %}
+
+{% if planned_products %}
+  <div class="match-list">
+    {% for planned in planned_products %}
+      <form method="post" class="match-card">
+        {% csrf_token %}
+        <input type="hidden" name="planned_product_id" value="{{ planned.id }}">
+
+        <div class="match-card-header">
+          <div>
+            <a class="planned-link" href="{% url 'planned_product_edit_page' planned.id %}">
+              <h3 style="margin-bottom: 6px;">{{ planned.name }}</h3>
+            </a>
+            <div class="match-meta">
+              ID: {{ planned.id }} · создан: {{ planned.created_at|date:"d.m.Y H:i" }}
+            </div>
+            <div style="margin-top: 8px;">
+              <a href="{% url 'planned_product_edit_page' planned.id %}">Открыть карточку и редактировать</a>
+            </div>
+          </div>
+          <div>
+            {% if planned.linked_product %}
+              <span class="status-badge">Связан с реальным товаром</span>
+            {% else %}
+              <span class="status-badge" style="background:#f4f3ef;color:#5d616b;">Пока не сопоставлен</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="preview-grid">
+          <div class="preview-box">
+            <label class="muted">Плановый товар</label>
+            <div class="preview-frame">
+              {% if planned.image %}
+                <img src="{{ media_prefix }}{{ planned.image.name }}" alt="{{ planned.name }}">
+              {% else %}
+                <div class="preview-empty">Фото нет</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="preview-box">
+            <label class="muted">Реальный товар</label>
+            <div class="preview-frame js-real-preview-frame" data-empty-label="Фото реального товара не выбрано">
+              {% if planned.linked_product and planned.linked_product.photos.all %}
+                <div class="preview-empty">Фото нет</div>
+              {% else %}
+                <div class="preview-empty">Фото нет</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="match-grid">
+          <div>
+            <div class="search-stack">
+              <div>
+                <label class="muted" for="product_search_{{ planned.id }}">Поиск реального товара</label>
+                <input
+                  id="product_search_{{ planned.id }}"
+                  type="text"
+                  class="js-product-search"
+                  placeholder="Название, WB SKU, бренд, категория, баркод"
+                  data-target-select="product_{{ planned.id }}"
+                >
+              </div>
+              <div>
+                <label class="muted" for="product_{{ planned.id }}">Реальный товар</label>
+                <select id="product_{{ planned.id }}" name="product_wb_sku" class="js-product-select">
+                  <option value="">Снять связь / не выбрано</option>
+                  {% for item in real_products %}
+                    <option
+                      value="{{ item.product.wb_sku }}"
+                      data-search="{{ item.search_text }}"
+                      data-local-image="{% if item.preview_local_path %}{{ media_prefix }}{{ item.preview_local_path }}{% endif %}"
+                      data-remote-image="{{ item.preview_url }}"
+                      {% if planned.linked_product_id == item.product.wb_sku %}selected{% endif %}
+                    >
+                      {{ item.option_label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="muted">Текущая связь</label>
+            <div class="card" style="padding:14px 16px;">
+              {% if planned.linked_product %}
+                <strong>{{ planned.linked_product.seller_sku }}</strong><br>
+                <span class="muted">WB SKU: {{ planned.linked_product.wb_sku }}</span>
+              {% else %}
+                <span class="muted">Связь ещё не назначена</span>
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <button type="submit">Сохранить</button>
+          </div>
+        </div>
+      </form>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <h3>Плановых товаров пока нет</h3>
+    <p class="muted">Сначала создайте плановый товар, после этого здесь появится возможность сопоставить его с реальным товаром.</p>
+  </div>
+{% endif %}
+
+{% if not real_products %}
+  <div class="card" style="margin-top:18px;">
+    <h3>Каталог реальных товаров пуст</h3>
+    <p class="muted">
+      Для сопоставления нужны записи в каталоге `Product`. После загрузки реальных товаров страница начнёт предлагать их в выпадающем списке.
+    </p>
+  </div>
+{% endif %}
+
+<script>
+  function syncRealPreview(select) {
+    const card = select.closest(".match-card");
+    const frame = card.querySelector(".js-real-preview-frame");
+    const option = select.options[select.selectedIndex];
+    const localImage = option ? option.dataset.localImage : "";
+    const remoteImage = option ? option.dataset.remoteImage : "";
+    const imageUrl = localImage || remoteImage;
+    const emptyLabel = frame.dataset.emptyLabel || "Фото нет";
+
+    if (!imageUrl) {
+      frame.innerHTML = '<div class="preview-empty">' + emptyLabel + "</div>";
+      return;
+    }
+
+    frame.innerHTML = '<img src="' + imageUrl + '" alt="Реальный товар">';
+  }
+
+  function filterProductOptions(input) {
+    const query = input.value.trim().toLowerCase();
+    const selectId = input.dataset.targetSelect;
+    const select = document.getElementById(selectId);
+    const currentValue = select.value;
+
+    Array.from(select.options).forEach((option, index) => {
+      if (index === 0) {
+        option.hidden = false;
+        return;
+      }
+      const haystack = (option.dataset.search || option.textContent || "").toLowerCase();
+      const shouldShow = !query || haystack.includes(query) || option.value === currentValue;
+      option.hidden = !shouldShow;
+    });
+  }
+
+  document.querySelectorAll(".js-product-search").forEach((input) => {
+    input.addEventListener("input", () => filterProductOptions(input));
+    filterProductOptions(input);
+  });
+
+  document.querySelectorAll(".js-product-select").forEach((select) => {
+    select.addEventListener("change", () => syncRealPreview(select));
+    syncRealPreview(select);
+  });
+</script>
+{% endblock %}

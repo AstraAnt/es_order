@@ -57,4 +57,35 @@
   <div class="row"><div class="muted">created_at</div><div>{{ order.created_at }}</div></div>
   <div class="row"><div class="muted">updated_at</div><div>{{ order.updated_at }}</div></div>
 </div>
+
+<div class="card" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Позиции заказа</h3>
+
+  {% if items %}
+    <table>
+      <thead>
+        <tr>
+          <th>Товар</th>
+          <th>Тип</th>
+          <th>Количество</th>
+          <th>Цена</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.item_label }}</td>
+            <td>{{ item.item_kind }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.price }}</td>
+            <td>{{ item.subtotal }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">В заказе пока нет позиций.</p>
+  {% endif %}
+</div>
 {% endblock %}

@@ -5,21 +5,490 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>{% block title %}Orders{% endblock %}</title>
   <style>
-    body { font-family: sans-serif; margin: 24px; }
-    a { text-decoration: none; }
-    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f7f7f7; text-align: left; }
-    .muted { color: #666; }
-    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; }
-    .row { display: grid; grid-template-columns: 180px 1fr; gap: 8px; }
+    :root {
+      --bg: #faf9f6;
+      --panel: #ffffff;
+      --ink: #18181b;
+      --muted: #66666f;
+      --line: #d8d6d1;
+      --line-strong: #b8b3aa;
+      --accent: #8897ff;
+      --accent-soft: #eef0ff;
+      --selection: #eceffc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    a { color: inherit; text-decoration: none; }
+    body::selection { background: var(--selection); }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(250, 249, 246, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .header-inner {
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 72px;
+      padding: 0 28px;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .eyebrow {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .brand-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .header-tools {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .bu-form {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 14px;
+      border-left: 1px solid var(--line);
+    }
+    .bu-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: #3f4148;
+      white-space: nowrap;
+    }
+    .bu-link strong {
+      font-weight: 600;
+    }
+    .bu-form label {
+      color: var(--muted);
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+    .bu-form select {
+      min-width: 220px;
+      max-width: 280px;
+      padding: 10px 12px;
+    }
+    .nav a {
+      padding: 26px 18px 24px;
+      color: #3f4148;
+      border-left: 1px solid var(--line);
+      font-size: 0.95rem;
+    }
+    .nav a:last-child {
+      border-right: 1px solid var(--line);
+    }
+    .nav a:hover { background: #f4f3ef; }
+    .shell {
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(220px, 270px) minmax(0, 1fr) minmax(240px, 310px);
+      min-height: calc(100vh - 73px);
+    }
+    .sidebar,
+    .toc {
+      padding: 28px 28px 36px;
+      border-right: 1px solid var(--line);
+    }
+    .toc {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+    .sidebar-title,
+    .toc-title {
+      margin: 0 0 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line-strong);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .side-group {
+      margin-bottom: 24px;
+    }
+    .side-group-title {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .side-list,
+    .toc-list {
+      display: grid;
+      gap: 4px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    .side-list a,
+    .toc-list a,
+    .side-list .active-item,
+    .toc-list .active-item {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #3f4148;
+      font-size: 0.95rem;
+    }
+    .side-list a:hover,
+    .toc-list a:hover {
+      background: #f4f3ef;
+    }
+    .active-item {
+      background: var(--selection);
+    }
+    .main {
+      padding: 32px clamp(20px, 4vw, 58px) 60px;
+    }
+    .article {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+    .page-kicker {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .page {
+      background: transparent;
+      padding: 0;
+    }
+    h1, h2, h3 {
+      margin: 0 0 16px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+    h3 { font-size: 1.25rem; }
+    p { line-height: 1.65; }
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 14px 16px;
+      vertical-align: top;
+      border-bottom: 1px solid #ece8df;
+    }
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      background: #f7f6f2;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover {
+      background: #fcfbf8;
+    }
+    .muted { color: var(--muted); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #4d5bc2;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge.error {
+      background: #fff0ee;
+      color: #b45142;
+    }
+    .badge.warn {
+      background: #fff7e5;
+      color: #956b0f;
+    }
+    .card {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 600;
+    }
+    .ghost-link,
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+    button,
+    .ghost-link {
+      padding: 11px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: #3f4148;
+      cursor: pointer;
+    }
+    button:hover,
+    .ghost-link:hover {
+      border-color: var(--line-strong);
+      background: #f7f6f2;
+    }
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #99a3d8;
+      box-shadow: 0 0 0 3px rgba(136, 151, 255, 0.12);
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      margin: 16px 0;
+      background: var(--line);
+    }
+    .toc-note {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    @media (max-width: 1100px) {
+      .shell {
+        grid-template-columns: minmax(210px, 240px) minmax(0, 1fr);
+      }
+      .toc {
+        display: none;
+      }
+      .main {
+        padding: 28px 34px 48px;
+      }
+    }
+    @media (max-width: 760px) {
+      .header-inner {
+        padding: 0 16px;
+        flex-wrap: wrap;
+      }
+      .nav {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .header-tools {
+        width: 100%;
+      }
+      .bu-form {
+        width: 100%;
+        border-left: 0;
+        padding-left: 0;
+      }
+      .bu-link {
+        width: 100%;
+        justify-content: center;
+      }
+      .bu-form select {
+        max-width: none;
+      }
+      .nav a {
+        white-space: nowrap;
+        border-top: 1px solid var(--line);
+      }
+      .shell {
+        grid-template-columns: 1fr;
+      }
+      .sidebar,
+      .toc {
+        display: none;
+      }
+      .main {
+        padding: 22px 16px 40px;
+      }
+      .row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
   </style>
 </head>
 <body>
-  <div style="margin-bottom: 16px;">
-    <a href="/orders/">← К списку заказов</a>
-  </div>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1 class="brand-title">es order</h1>
+        <p class="brand-subtitle">операционная база закупок</p>
+      </div>
+      <div class="header-tools">
+        <nav class="nav">
+          <a href="{% url 'home_page' %}">Главная</a>
+          <a href="{% url 'orders_list_page' %}">Заказы</a>
+          <a href="{% url 'order_create_page' %}">Новый заказ</a>
+          <a href="{% url 'planned_products_page' %}">Плановые товары</a>
+          <a href="{% url 'products_catalog_page' %}">Каталог</a>
+          <a href="{% url 'product_matching_page' %}">Сопоставление</a>
+          <a href="{% url 'wb_sync_page' %}">WB синк</a>
+          <a href="/admin/">Админка</a>
+          <a href="/api/">API</a>
+        </nav>
+        <a class="bu-link" href="{% url 'select_business_unit_page' %}">
+          <span>Business Unit</span>
+          <strong>
+            {% if active_business_unit %}
+              {{ active_business_unit.short_code }}
+            {% else %}
+              выбрать
+            {% endif %}
+          </strong>
+        </a>
+        {% if available_business_units %}
+          <form class="bu-form" method="post" action="{% url 'select_business_unit_page' %}">
+            {% csrf_token %}
+            <label for="header_business_unit_id">Business Unit</label>
+            <select id="header_business_unit_id" name="business_unit_id" onchange="this.form.submit()">
+              <option value="">Не выбран</option>
+              {% for bu in available_business_units %}
+                <option value="{{ bu.id }}" {% if active_business_unit and active_business_unit.id == bu.id %}selected{% endif %}>
+                  {{ bu.name }} ({{ bu.short_code }})
+                </option>
+              {% endfor %}
+            </select>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </header>
 
-  {% block content %}{% endblock %}
+  <div class="shell">
+    <aside class="sidebar">
+      <h2 class="sidebar-title">База заказов</h2>
+      {% block left_sidebar %}
+        <div class="side-group">
+          <p class="side-group-title">Разделы</p>
+          <ul class="side-list">
+            <li><a href="{% url 'home_page' %}">Обзор системы</a></li>
+            <li><a href="{% url 'orders_list_page' %}">Все заказы</a></li>
+            <li><a href="{% url 'order_create_page' %}">Создать заказ</a></li>
+            <li><a href="{% url 'planned_products_page' %}">Плановые товары</a></li>
+            <li><a href="{% url 'products_catalog_page' %}">Каталог товаров</a></li>
+            <li><a href="{% url 'product_matching_page' %}">Сопоставление товаров</a></li>
+            <li><a href="{% url 'wb_sync_page' %}">Синк Wildberries</a></li>
+            <li><a href="/admin/">Админ-панель</a></li>
+            <li><a href="/api/">Интеграции API</a></li>
+          </ul>
+        </div>
+        <div class="side-group">
+          <p class="side-group-title">Работа с заказом</p>
+          <ul class="side-list">
+            <li><span class="active-item">Плановые товары</span></li>
+            <li><span class="active-item">Реальные SKU</span></li>
+            <li><span class="active-item">Комиссии и доставка</span></li>
+            <li><span class="active-item">История событий</span></li>
+          </ul>
+        </div>
+      {% endblock %}
+    </aside>
+
+    <main class="main">
+      <div class="article">
+        <div class="page">
+          {% if messages %}
+            <div style="display:grid;gap:12px;margin-bottom:20px;">
+              {% for message in messages %}
+                <div class="card" style="padding:14px 16px;{% if message.tags == 'error' %} border-color:#efc8c2;background:#fff4f2;{% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </main>
+
+    <aside class="toc">
+      <h2 class="toc-title">Навигация</h2>
+      {% block right_sidebar %}
+        <p class="toc-note">Быстрые переходы по операционным сценариям и текущему состоянию интерфейса.</p>
+        <ul class="toc-list">
+          <li><a href="{% url 'home_page' %}">Общая сводка</a></li>
+          <li><a href="{% url 'orders_list_page' %}">Список заказов</a></li>
+          <li><a href="{% url 'order_create_page' %}">Создание заказа</a></li>
+          <li><a href="{% url 'planned_products_page' %}">Плановые товары</a></li>
+          <li><a href="{% url 'products_catalog_page' %}">Каталог товаров</a></li>
+          <li><a href="{% url 'product_matching_page' %}">Сопоставление товаров</a></li>
+          <li><a href="{% url 'wb_sync_page' %}">Импорт и лог синка</a></li>
+          <li><span class="active-item">Редактирование шапки и позиций</span></li>
+          <li><span class="active-item">Плановые и реальные товары</span></li>
+          <li><span class="active-item">События и детализация</span></li>
+        </ul>
+      {% endblock %}
+    </aside>
+  </div>
 </body>
 </html>

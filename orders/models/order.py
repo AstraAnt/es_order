@@ -81,7 +81,7 @@ class OrderItemView(models.Model):
 
     # Реальный товар определяется по barcode
     product_barcode = models.CharField(max_length=255, null=True, blank=True, db_index=True)
-    planned_product_id = models.UUIDField(null=True, blank=True)
+    planned_product_id = models.BigIntegerField(null=True, blank=True)
 
     quantity = models.DecimalField(max_digits=12, decimal_places=2)
     price = models.DecimalField(max_digits=12, decimal_places=2)

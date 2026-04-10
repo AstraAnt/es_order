@@ -1,0 +1,25 @@
+[07/Apr/2026 21:55:34] "GET /orders/create/ HTTP/1.1" 200 7049
+[07/Apr/2026 21:55:35] "POST /orders/create/ HTTP/1.1" 302 0
+[07/Apr/2026 21:55:35] "GET /orders/f4b2f822-609a-4dc7-8c00-d139d55ed932/ HTTP/1.1" 200 6720
+[07/Apr/2026 21:56:15] "GET / HTTP/1.1" 200 11505
+[07/Apr/2026 21:56:18] "GET /orders/create/ HTTP/1.1" 200 7049
+[07/Apr/2026 21:56:30] "POST /orders/create/ HTTP/1.1" 302 0
+[07/Apr/2026 21:56:30] "GET /orders/7f325b89-b181-417c-8222-c8377f2aee92/ HTTP/1.1" 200 6718
+[07/Apr/2026 21:56:40] "GET /orders/ HTTP/1.1" 200 8252
+[07/Apr/2026 21:56:47] "GET /admin/ HTTP/1.1" 200 14292
+[07/Apr/2026 21:56:47] "GET /static/admin/css/dark_mode.css HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/css/dashboard.css HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/css/responsive.css HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/js/theme.js HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/css/base.css HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/img/icon-addlink.svg HTTP/1.1" 304 0
+[07/Apr/2026 21:56:47] "GET /static/admin/img/icon-changelink.svg HTTP/1.1" 304 0
+Not Found: /api/
+[07/Apr/2026 21:56:50] "GET /api/ HTTP/1.1" 404 7591
+[07/Apr/2026 21:56:54] "GET / HTTP/1.1" 200 11505
+[07/Apr/2026 21:56:56] "GET /orders/ HTTP/1.1" 200 8252
+[07/Apr/2026 22:03:18] "GET /orders/create/ HTTP/1.1" 200 7049
+[07/Apr/2026 22:04:04] "GET / HTTP/1.1" 200 11505
+[07/Apr/2026 22:05:29] "GET /orders/create/ HTTP/1.1" 200 7049

@@ -1,11 +1,98 @@
 {% extends "orders/base.html" %}
+{% load l10n %}
 {% block title %}Изменить заказ{% endblock %}
 
 {% block content %}
+<style>
+  .stack { display: grid; gap: 16px; }
+  .item-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.6fr) 140px 140px 120px;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+  .new-item-grid {
+    display: grid;
+    grid-template-columns: 140px minmax(220px, 1fr) 140px 140px;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+  .wide-input, .wide-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .search-stack {
+    display: grid;
+    gap: 8px;
+  }
+  .error-box {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .inline-error {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #9f1239;
+  }
+  .item-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .item-link:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .inline-note {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #f5f8ff;
+    border: 1px solid #d7e2ff;
+    color: #244286;
+  }
+  @media (max-width: 900px) {
+    .item-grid, .new-item-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
 <h1>Изменить заказ: {{ order.human_code }}</h1>
 
 {% if order.status == "Cancelled" %}
   <p style="color:#b00020;"><b>Заказ отменён.</b> Изменять нельзя (домен запретит).</p>
+{% endif %}
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="inline-note" style="margin-bottom: 16px;">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+{% if form_error %}
+  <div class="error-box">{{ form_error }}</div>
 {% endif %}
 
 <form method="post" class="card">
@@ -13,15 +100,15 @@
 
   <div class="row">
     <div class="muted">Дата</div>
-    <div><input type="date" name="date" value="{{ order.date|date:'Y-m-d' }}"></div>
+    <div><input class="wide-input" type="date" name="date" value="{% if form_data.date %}{{ form_data.date }}{% else %}{{ order.date|date:'Y-m-d' }}{% endif %}"></div>
   </div>
 
   <div class="row">
     <div class="muted">Business Unit</div>
     <div>
-      <select name="business_unit_id">
+      <select class="wide-select" name="business_unit_id">
         {% for p in business_units %}
-          <option value="{{ p.id }}" {% if p.id == order.business_unit.id %}selected{% endif %}>
+          <option value="{{ p.id }}" {% if form_data.business_unit_id|default:order.business_unit.id|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
             {{ p.name }} ({{ p.short_code }})
           </option>
         {% endfor %}
@@ -32,9 +119,9 @@
   <div class="row">
     <div class="muted">Buyer</div>
     <div>
-      <select name="buyer_id">
+      <select class="wide-select" name="buyer_id">
         {% for p in buyers %}
-          <option value="{{ p.id }}" {% if p.id == order.buyer.id %}selected{% endif %}>
+          <option value="{{ p.id }}" {% if form_data.buyer_id|default:order.buyer.id|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
             {{ p.name }} ({{ p.short_code }})
           </option>
         {% endfor %}
@@ -45,9 +132,9 @@
   <div class="row">
     <div class="muted">Валюта</div>
     <div>
-      <select name="currency_code">
+      <select class="wide-select" name="currency_code">
         {% for c in currencies %}
-          <option value="{{ c.code }}" {% if c.code == order.currency.code %}selected{% endif %}>
+          <option value="{{ c.code }}" {% if form_data.currency_code|default:order.currency.code == c.code %}selected{% endif %}>
             {{ c.code }} — {{ c.name }}
           </option>
         {% endfor %}
@@ -59,19 +146,19 @@
 
   <div class="row">
     <div class="muted">Комиссия buyer (%)</div>
-    <div><input type="number" step="0.01" name="buyer_commission_percent"
-                value="{% if order.buyer_commission_percent != None %}{{ order.buyer_commission_percent }}{% endif %}"></div>
+    <div><input class="wide-input" type="number" step="0.01" name="buyer_commission_percent"
+                value="{{ form_data.buyer_commission_percent|default_if_none:order.buyer_commission_percent }}"></div>
   </div>
 
   <div class="row">
     <div class="muted">Комиссия buyer (сумма)</div>
-    <div><input type="number" step="0.01" name="buyer_commission_amount"
-                value="{% if order.buyer_commission_amount != None %}{{ order.buyer_commission_amount }}{% endif %}"></div>
+    <div><input class="wide-input" type="number" step="0.01" name="buyer_commission_amount"
+                value="{{ form_data.buyer_commission_amount|default_if_none:order.buyer_commission_amount }}"></div>
   </div>
 
   <div class="row">
     <div class="muted">Доставка до buyer</div>
-    <div><input type="number" step="0.01" name="buyer_delivery_cost" value="{{ order.buyer_delivery_cost }}"></div>
+    <div><input class="wide-input" type="number" step="0.01" name="buyer_delivery_cost" value="{{ form_data.buyer_delivery_cost|default:order.buyer_delivery_cost }}"></div>
   </div>
 
   <hr style="margin: 12px 0;">
@@ -79,10 +166,10 @@
   <div class="row">
     <div class="muted">Статус</div>
     <div>
-      <select name="status">
+      <select class="wide-select" name="status">
         <option value="">(не менять)</option>
-        <option value="Active">Active</option>
-        <option value="Cancelled">Cancelled</option>
+        <option value="Active" {% if form_data.status == "Active" %}selected{% endif %}>Active</option>
+        <option value="Cancelled" {% if form_data.status == "Cancelled" %}selected{% endif %}>Cancelled</option>
       </select>
       <div class="muted" style="font-size: 12px;">
         Обычно статус меняется доменно (CancelOrder), но оставлено для админских случаев.
@@ -94,12 +181,234 @@
 
   <div class="row">
     <div class="muted">Заметки</div>
-    <div><textarea name="notes" rows="3" style="width: 520px;">{% if order.notes %}{{ order.notes }}{% endif %}</textarea></div>
+    <div><textarea class="wide-input" name="notes" rows="3">{{ form_data.notes|default:order.notes }}</textarea></div>
+  </div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="stack">
+    <div>
+      <h3 style="margin: 0 0 6px;">Текущие позиции заказа</h3>
+      <p class="muted" style="margin: 0;">Можно менять количество и цену или удалить строку из заказа.</p>
+    </div>
+
+    {% if existing_items %}
+      {% for item in existing_items %}
+        <div class="item-grid">
+          <div>
+            {% if item.item_link %}
+              <a class="item-link" href="{{ item.item_link }}">
+                <label class="field-label" style="cursor:pointer;">{{ item.item_label }}</label>
+              </a>
+            {% else %}
+              <label class="field-label">{{ item.item_label }}</label>
+            {% endif %}
+            <div class="muted">Тип: {{ item.item_kind }} | subtotal: {{ item.subtotal }}</div>
+          </div>
+          <div>
+            <label class="field-label">Количество</label>
+            <input class="wide-input" type="number" step="0.01" min="0.01" name="existing_quantity" value="{{ item.quantity|unlocalize }}">
+          </div>
+          <div>
+            <label class="field-label">Цена</label>
+            <input class="wide-input" type="number" step="0.01" min="0" name="existing_price" value="{{ item.price|unlocalize }}">
+          </div>
+          <div>
+            <label class="field-label">Удалить</label>
+            <label><input type="checkbox" name="existing_remove" value="{{ item.item_id }}" {% if item.marked_for_remove %}checked{% endif %}> убрать</label>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">В заказе пока нет позиций.</p>
+    {% endif %}
+  </div>
+
+  <hr style="margin: 12px 0;">
+
+  <div class="stack">
+    <div>
+      <h3 style="margin: 0 0 6px;">Новые товары</h3>
+      <p class="muted" style="margin: 0;">При необходимости можно добавить ещё товары в этот заказ.</p>
+    </div>
+
+    {% if form_error and "Строка товара" in form_error or form_error and "Товары в заказе" in form_error %}
+      <div class="inline-error">{{ form_error }}</div>
+    {% endif %}
+
+    <div id="item-rows">
+      {% for row in new_item_rows %}
+        <div class="new-item-grid js-item-row">
+          <div>
+            <label class="field-label">Тип товара</label>
+            <select class="wide-select js-kind-select" name="new_item_kind">
+              <option value="planned" {% if row.kind == "planned" %}selected{% endif %}>Плановый</option>
+              <option value="real" {% if row.kind == "real" %}selected{% endif %}>Реальный</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Товар</label>
+            <select class="wide-select js-planned-select" name="new_planned_product_id" {% if row.kind == "real" %}style="display:none;"{% endif %}>
+              <option value="">Выберите плановый товар</option>
+              {% for item in planned_products %}
+                <option value="{{ item.id }}" {% if row.planned_product_id == item.id|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="search-stack js-real-stack" {% if row.kind != "real" %}style="display:none;"{% endif %}>
+              <input class="wide-input js-real-search" type="text" placeholder="Начните вводить артикул WB">
+              <select class="wide-select js-real-select" name="new_product_barcode">
+                {% if real_products %}
+                  <option value="">Выберите товар по артикулу WB</option>
+                  {% for item in real_products %}
+                    <option value="{{ item.wb_sku }}" data-wb-sku="{{ item.wb_sku }}" {% if row.product_barcode == item.wb_sku %}selected{% endif %}>
+                      {{ item.seller_sku }} {{ item.wb_sku }}
+                    </option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">Нет доступных товаров</option>
+                {% endif %}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Количество</label>
+            <input class="wide-input" type="number" step="0.01" min="0.01" name="new_quantity" value="{{ row.quantity }}" placeholder="1">
+          </div>
+          <div>
+            <label class="field-label">Цена</label>
+            <input class="wide-input" type="number" step="0.01" min="0" name="new_price" value="{{ row.price }}" placeholder="0.00">
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div>
+      <button class="ghost-link" type="button" id="add-item-row">Добавить еще товар</button>
+    </div>
+    {% if not real_products %}
+      <p class="muted" style="margin: 0;">Выбор по артикулу WB сейчас недоступен: в базе нет записей в каталоге реальных товаров.</p>
+    {% endif %}
   </div>
 
   <div style="margin-top: 12px;">
     <button type="submit">💾 Сохранить</button>
   </div>
 </form>
+
+<template id="item-row-template">
+  <div class="new-item-grid js-item-row">
+    <div>
+      <label class="field-label">Тип товара</label>
+      <select class="wide-select js-kind-select" name="new_item_kind">
+        <option value="planned">Плановый</option>
+        <option value="real" selected>Реальный</option>
+      </select>
+    </div>
+    <div>
+      <label class="field-label">Товар</label>
+      <select class="wide-select js-planned-select" name="new_planned_product_id">
+        <option value="">Выберите плановый товар</option>
+        {% for item in planned_products %}
+          <option value="{{ item.id }}">{{ item.name }}</option>
+        {% endfor %}
+      </select>
+      <div class="search-stack js-real-stack" style="display:none;">
+        <input class="wide-input js-real-search" type="text" placeholder="Начните вводить артикул WB">
+        <select class="wide-select js-real-select" name="new_product_barcode">
+          {% if real_products %}
+            <option value="">Выберите товар по артикулу WB</option>
+            {% for item in real_products %}
+              <option value="{{ item.wb_sku }}" data-wb-sku="{{ item.wb_sku }}">{{ item.seller_sku }} {{ item.wb_sku }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">Нет доступных товаров</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="field-label">Количество</label>
+      <input class="wide-input" type="number" step="0.01" min="0.01" name="new_quantity" placeholder="1">
+    </div>
+    <div>
+      <label class="field-label">Цена</label>
+      <input class="wide-input" type="number" step="0.01" min="0" name="new_price" placeholder="0.00">
+    </div>
+  </div>
+</template>
+
+<script>
+  function syncItemRow(row) {
+    const kind = row.querySelector(".js-kind-select").value;
+    const planned = row.querySelector(".js-planned-select");
+    const realStack = row.querySelector(".js-real-stack");
+    planned.style.display = kind === "planned" ? "" : "none";
+    realStack.style.display = kind === "real" ? "" : "none";
+  }
+
+  function filterRealOptions(row) {
+    const input = row.querySelector(".js-real-search");
+    const select = row.querySelector(".js-real-select");
+    if (!input || !select) {
+      return;
+    }
+    if (!select.dataset.baseOptions) {
+      select.dataset.baseOptions = JSON.stringify(
+        Array.from(select.options).slice(1).map((option) => ({
+          value: option.value,
+          label: option.textContent.trim(),
+          wbSku: option.dataset.wbSku || "",
+        }))
+      );
+    }
+
+    const query = input.value.replace(/\s+/g, "").trim();
+    const baseOptions = JSON.parse(select.dataset.baseOptions || "[]");
+    const currentValue = select.value;
+    const matchedOptions = !query
+      ? baseOptions
+      : baseOptions.filter((option) => option.wbSku.includes(query));
+
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = matchedOptions.length
+      ? "Выберите товар по артикулу WB"
+      : "Ничего не найдено";
+    select.appendChild(placeholder);
+
+    matchedOptions.forEach((optionData) => {
+      const option = document.createElement("option");
+      option.value = optionData.value;
+      option.textContent = optionData.label;
+      option.dataset.wbSku = optionData.wbSku;
+      if (optionData.value === currentValue) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  }
+
+  function bindItemRow(row) {
+    row.querySelector(".js-kind-select").addEventListener("change", () => syncItemRow(row));
+    const search = row.querySelector(".js-real-search");
+    if (search) {
+      search.addEventListener("input", () => filterRealOptions(row));
+    }
+    syncItemRow(row);
+    filterRealOptions(row);
+  }
+
+  document.querySelectorAll(".js-item-row").forEach((row) => {
+    bindItemRow(row);
+  });
+
+  document.getElementById("add-item-row").addEventListener("click", () => {
+    const fragment = document.getElementById("item-row-template").content.cloneNode(true);
+    const row = fragment.querySelector(".js-item-row");
+    document.getElementById("item-rows").appendChild(fragment);
+    bindItemRow(document.querySelector("#item-rows .js-item-row:last-child"));
+  });
+</script>
 
 {% endblock %}

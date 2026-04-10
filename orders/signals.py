@@ -1,4 +1,5 @@
 from django.db.models.signals import post_migrate
+from django.db.backends.signals import connection_created
 from django.dispatch import receiver
 
 
@@ -54,3 +55,21 @@ def seed_initial_data(sender, **kwargs):
 
         if changed:
             obj.save()
+
+
+@receiver(connection_created)
+def configure_sqlite_connection(sender, connection, **kwargs):
+    """
+    Небольшая стабилизация SQLite для локальной разработки:
+    - busy_timeout даёт время дождаться снятия краткой блокировки
+    - WAL уменьшает конфликты между чтением и записью
+    - synchronous=NORMAL делает dev-режим менее "хрупким" на Windows
+    """
+    if connection.vendor != "sqlite":
+        return
+
+    with connection.cursor() as cursor:
+        cursor.execute("PRAGMA busy_timeout = 20000;")
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute("PRAGMA synchronous = NORMAL;")
+        cursor.execute("PRAGMA foreign_keys = ON;")

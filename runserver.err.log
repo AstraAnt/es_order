@@ -1,0 +1,182 @@
+Watching for file changes with StatReloader
+[07/Apr/2026 21:27:03] "GET /admin/ HTTP/1.1" 200 14292
+[07/Apr/2026 21:27:10] "GET / HTTP/1.1" 200 11507
+[07/Apr/2026 21:34:00] "GET /orders/create/ HTTP/1.1" 200 7049
+[07/Apr/2026 21:34:30] "GET /orders/create/ HTTP/1.1" 200 7049
+Internal Server Error: /orders/create/
+Traceback (most recent call last):
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 303, in _commit
+    return self.connection.commit()
+           ~~~~~~~~~~~~~~~~~~~~~~^^
+sqlite3.OperationalError: disk I/O error
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\es_order\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "D:\es_order\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\es_order\orders\web_views.py", line 135, in order_create_page
+    service.create_order(cmd)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "D:\es_order\orders\application\order_service.py", line 89, in create_order
+    human_code=generate_human_code(
+               ~~~~~~~~~~~~~~~~~~~^
+        business_unit_code=bu.short_code,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        buyer_code=buyer.short_code,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        dt=cmd.date,
+        ^^^^^^^^^^^^
+    ),
+    ^
+  File "D:\es_order\orders\application\human_code.py", line 48, in generate_human_code
+    with transaction.atomic():
+         ~~~~~~~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\transaction.py", line 263, in __exit__
+    connection.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 327, in commit
+    self._commit()
+    ~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 302, in _commit
+    with debug_transaction(self, "COMMIT"), self.wrap_database_errors:
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 303, in _commit
+    return self.connection.commit()
+           ~~~~~~~~~~~~~~~~~~~~~~^^
+django.db.utils.OperationalError: disk I/O error
+[07/Apr/2026 21:34:53] "POST /orders/create/ HTTP/1.1" 500 112332
+Internal Server Error: /orders/create/
+Traceback (most recent call last):
+  File "D:\es_order\.venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 244, in _get_session
+    return self._session_cache
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SessionStore' object has no attribute '_session_cache'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 279, in ensure_connection
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 256, in connect
+    self.connection = self.get_new_connection(conn_params)
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 207, in get_new_connection
+    register_functions(conn)
+    ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\sqlite3\_functions.py", line 85, in register
+    if not connection.execute(sql).fetchone()[0]:
+           ~~~~~~~~~~~~~~~~~~^^^^^
+sqlite3.OperationalError: disk I/O error
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\es_order\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "D:\es_order\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\es_order\orders\web_views.py", line 139, in order_create_page
+    return render(request, "orders/order_create.html", {
+        "business_units": business_units,
+    ...<2 lines>...
+        "today": timezone.now().date().isoformat(),
+    })
+  File "D:\es_order\.venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "D:\es_order\.venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\template\base.py", line 170, in render
+    with context.bind_template(self):
+         ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\astra\AppData\Local\Programs\Python\Python314\Lib\contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "D:\es_order\.venv\Lib\site-packages\django\template\context.py", line 259, in bind_template
+    context = processor(self.request)
+  File "D:\es_order\orders\context_processors.py", line 10, in active_business_unit_context
+    active_bu = get_active_business_unit(request)
+  File "D:\es_order\orders\session.py", line 28, in get_active_business_unit
+    bu_id = get_active_business_unit_id(request)
+  File "D:\es_order\orders\session.py", line 20, in get_active_business_unit_id
+    return request.session.get(SESSION_KEY_ACTIVE_BU_ID)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 74, in get
+    return self._session.get(key, default)
+           ^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 249, in _get_session
+    self._session_cache = self.load()
+                          ~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\contrib\sessions\backends\db.py", line 55, in load
+    s = self._get_session_from_db()
+  File "D:\es_order\.venv\Lib\site-packages\django\contrib\sessions\backends\db.py", line 34, in _get_session_from_db
+    return self.model.objects.get(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        session_key=self.session_key, expire_date__gt=timezone.now()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\query.py", line 631, in get
+    num = len(clone)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\query.py", line 368, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\query.py", line 1954, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\query.py", line 93, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "D:\es_order\.venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1621, in execute_sql
+    cursor = self.connection.cursor()
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 320, in cursor
+    return self._cursor()
+           ~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 296, in _cursor
+    self.ensure_connection()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    with self.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 279, in ensure_connection
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\base\base.py", line 256, in connect
+    self.connection = self.get_new_connection(conn_params)
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 207, in get_new_connection
+    register_functions(conn)
+    ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\es_order\.venv\Lib\site-packages\django\db\backends\sqlite3\_functions.py", line 85, in register
+    if not connection.execute(sql).fetchone()[0]:
+           ~~~~~~~~~~~~~~~~~~^^^^^
+django.db.utils.OperationalError: disk I/O error
+[07/Apr/2026 21:42:34,264] - Broken pipe from ('127.0.0.1', 49569)

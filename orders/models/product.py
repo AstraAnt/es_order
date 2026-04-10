@@ -78,6 +78,14 @@ class Product(models.Model):
                                  help_text="Категория товара")
     partner = models.ForeignKey('Partner', on_delete=models.SET_NULL, null=True, blank=True,
                                related_name="products", help_text="Владелец товара (клиент или Business Unit ИП Никита Край)")
+    business_unit = models.ForeignKey(
+        'orders.BusinessUnit',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        help_text="Business Unit, из которого загружен товар",
+    )
 
     def __str__(self):
         return f"{self.seller_sku} {self.wb_sku}({self.category.name})"

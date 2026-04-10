@@ -1,12 +1,17 @@
 from rest_framework import serializers
 
 
+# -------------------------
+# ORDER
+# -------------------------
+
 class CreateOrderSerializer(serializers.Serializer):
     """
     Создание заказа.
 
-    Важно:
-    - human_code можно не передавать: он будет сгенерирован как BU_BUYER_ДД.ММ.ГГ[_N]
+    human_code:
+    - можно передать вручную
+    - можно оставить пустым, тогда он сгенерируется автоматически
     """
     human_code = serializers.CharField(required=False, allow_blank=True)
 
@@ -15,9 +20,7 @@ class CreateOrderSerializer(serializers.Serializer):
     business_unit_id = serializers.UUIDField()
     buyer_id = serializers.UUIDField()
 
-    # Currency у нас PK = code (RUB/USD/...), но в нашем домене/ивентах мы храним currency_id.
-    # В твоём проекте Currency.code = primary_key => это строка 3 символа.
-    # Поэтому здесь делаем CharField.
+    # Currency.code
     currency_id = serializers.CharField(max_length=3)
 
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
@@ -59,3 +62,67 @@ class UpdateOrderSerializer(serializers.Serializer):
 
 class CancelOrderSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+# -------------------------
+# ORDER ITEMS
+# -------------------------
+
+class AddOrderItemSerializer(serializers.Serializer):
+    """
+    Добавление строки заказа.
+
+    Должно быть указано ровно одно:
+    - product_barcode
+    - planned_product_id
+    """
+    item_id = serializers.UUIDField(required=False)
+
+    product_barcode = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    planned_product_id = serializers.IntegerField(required=False, allow_null=True)
+
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+    price = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+    production_days = serializers.IntegerField(required=False, default=0)
+    delivery_days = serializers.IntegerField(required=False, default=14)
+
+    planned_fx_to_rub = serializers.DecimalField(
+        max_digits=18, decimal_places=6, required=False, allow_null=True
+    )
+    notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate(self, attrs):
+        barcode = attrs.get("product_barcode")
+        planned = attrs.get("planned_product_id")
+
+        has_barcode = bool(barcode)
+        has_planned = planned is not None
+
+        if has_barcode == has_planned:
+            raise serializers.ValidationError(
+                "Нужно указать ровно одно: product_barcode или planned_product_id."
+            )
+        return attrs
+
+
+class RemoveOrderItemSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+class SetOrderItemQuantitySerializer(serializers.Serializer):
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
+class SetOrderItemPriceSerializer(serializers.Serializer):
+    price = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
+class SetOrderItemFxPlannedSerializer(serializers.Serializer):
+    planned_fx_to_rub = serializers.DecimalField(max_digits=18, decimal_places=6)
+
+
+class ResolveOrderItemToBarcodeSerializer(serializers.Serializer):
+    to_product_barcode = serializers.CharField()
+    from_planned_product_id = serializers.IntegerField(required=False, allow_null=True)
+    link_id = serializers.UUIDField(required=False, allow_null=True)

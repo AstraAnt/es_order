@@ -1,4 +1,3 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from orders.models import BusinessUnit
@@ -10,7 +9,6 @@ from orders.session import (
 )
 
 
-@login_required
 def select_business_unit_page(request):
     """
     Страница выбора активного Business Unit.

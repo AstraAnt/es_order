@@ -1,5 +1,3 @@
-# orders/projections/order_projector.py
-
 from __future__ import annotations
 
 from decimal import Decimal
@@ -20,8 +18,7 @@ from orders.domain.events import (
     ORDER_ITEM_FX_PLANNED_SET,
     ORDER_ITEM_RESOLVED_TO_BARCODE,
 )
-from orders.models.order import OrderView, OrderItemView
-from orders.models import Partner
+from orders.models import OrderView, OrderItemView, BusinessUnit, Partner
 from finance.models import Currency
 
 
@@ -30,7 +27,14 @@ AGGREGATE_TYPE = "PurchaseOrder"
 
 class OrderProjector:
     """
-    Новый проектор (класс): принимает DomainEvent и обновляет read-модели.
+    Проектор:
+    - строит OrderView
+    - строит OrderItemView
+    - пересчитывает totals
+
+    В новой схеме:
+    - business_unit -> BusinessUnit
+    - buyer -> Partner(role=buyer)
     """
 
     @transaction.atomic
@@ -69,13 +73,13 @@ class OrderProjector:
 
     def _on_created(self, e: DomainEvent) -> None:
         p = e.payload
+
         ov = OrderView(
             order_id=e.aggregate_id,
             human_code=p["human_code"],
 
-            business_unit=Partner.objects.get(id=p["business_unit_id"]),
+            business_unit=BusinessUnit.objects.get(id=p["business_unit_id"]),
             buyer=Partner.objects.get(id=p["buyer_id"]),
-            # Currency PK = code => здесь currency_id это строка типа "RUB"
             currency=Currency.objects.get(code=p["currency_id"]),
 
             date=p["date"],
@@ -88,6 +92,7 @@ class OrderProjector:
             status=p.get("status", "Active"),
             created_at=e.occurred_at,
         )
+
         ov.full_clean()
         ov.save()
 
@@ -97,20 +102,25 @@ class OrderProjector:
 
         if "date" in p:
             ov.date = p["date"]
+
         if "notes" in p:
             ov.notes = p["notes"]
 
         if "business_unit_id" in p:
-            ov.business_unit = Partner.objects.get(id=p["business_unit_id"])
+            ov.business_unit = BusinessUnit.objects.get(id=p["business_unit_id"])
+
         if "buyer_id" in p:
             ov.buyer = Partner.objects.get(id=p["buyer_id"])
+
         if "currency_id" in p:
             ov.currency = Currency.objects.get(code=p["currency_id"])
 
         if "buyer_commission_percent" in p:
             ov.buyer_commission_percent = Decimal(p["buyer_commission_percent"]) if p["buyer_commission_percent"] is not None else None
+
         if "buyer_commission_amount" in p:
             ov.buyer_commission_amount = Decimal(p["buyer_commission_amount"]) if p["buyer_commission_amount"] is not None else None
+
         if "buyer_delivery_cost" in p:
             ov.buyer_delivery_cost = Decimal(p["buyer_delivery_cost"])
 
@@ -119,6 +129,7 @@ class OrderProjector:
 
         ov.full_clean()
         ov.save()
+
         self._recalc_totals(e.aggregate_id)
 
     def _on_cancelled(self, e: DomainEvent) -> None:
@@ -126,10 +137,11 @@ class OrderProjector:
         ov.status = "Cancelled"
         ov.save()
 
-    # ---------- ITEMS VIEW (BARCODE) ----------
+    # ---------- ITEMS VIEW ----------
 
     def _on_item_added(self, e: DomainEvent) -> None:
         p = e.payload
+
         OrderItemView.objects.update_or_create(
             item_id=p["item_id"],
             defaults={
@@ -181,6 +193,7 @@ class OrderProjector:
 
     def _recalc_totals(self, order_id: UUID) -> None:
         ov = OrderView.objects.select_for_update().get(order_id=order_id)
+
         items = OrderItemView.objects.filter(order_id=order_id, is_removed=False)
         items_total = sum((i.subtotal for i in items), Decimal("0"))
         ov.items_total = items_total
@@ -196,24 +209,13 @@ class OrderProjector:
 
 
 # ---------------------------------------------------------------------
-# Совместимость со старой системой:
-# - раньше runner дергал project_order_event(EventRow)
-# - теперь проектор класс и принимает DomainEvent
+# Совместимость со старым ProjectorRunner
 # ---------------------------------------------------------------------
 
 _projector_singleton = OrderProjector()
 
 
 def project_order_event(event_row) -> None:
-    """
-    Совместимость со старым ProjectorRunner.
-
-    На вход принимает запись из таблицы Event (ORM-модель),
-    конвертирует её в DomainEvent и отдаёт в новый проектор.
-
-    Важно:
-    - игнорируем события не нашего агрегата (если в EventStore будут другие агрегаты)
-    """
     if event_row.aggregate_type != AGGREGATE_TYPE:
         return
 

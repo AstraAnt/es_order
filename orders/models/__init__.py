@@ -5,6 +5,7 @@ from .user_access import UserBusinessUnitAccess
 from .order import OrderView, OrderItemView, PurchaseOrder, OrderItem
 from .order_number_counter import OrderNumberCounter
 from .product import PlannedProduct, Brand, Category, Product, ProductPhoto, ProductSKU, ProductLink
+from .wb_sync import WBSyncLog, WBSyncRun
 
 __all__ = [
     "Event",
@@ -32,4 +33,6 @@ __all__ = [
     "ProductPhoto",
     "ProductSKU",
     "ProductLink",
+    "WBSyncRun",
+    "WBSyncLog",
 ]

@@ -2,12 +2,34 @@
 {% block title %}Список заказов{% endblock %}
 
 {% block content %}
-<h1>Список заказов (OrderView)</h1>
-<a href="{% url 'order_create_page' %}">➕ Создать заказ</a>
+<style>
+  .list-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .clickable-row {
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .clickable-row:hover {
+    background: #fcfbf8;
+  }
+</style>
 
-<p class="muted">
-  Это read-model (проекция). Она строится из событий и используется для быстрого чтения.
-</p>
+<p class="page-kicker">База заказов / список</p>
+<div class="list-head">
+  <div>
+    <h1>Список заказов</h1>
+    <p class="muted">
+      Это read-model (проекция). Она строится из событий и используется для быстрого чтения.
+    </p>
+  </div>
+  <a class="action-link" href="{% url 'order_create_page' %}">Создать заказ</a>
+</div>
+
 
 {% if orders %}
   <table>
@@ -26,13 +48,9 @@
     </thead>
     <tbody>
       {% for o in orders %}
-      <tr>
+      <tr class="clickable-row" onclick="window.location='{% url 'order_edit_page' o.order_id %}'">
         <td><b>{{ o.human_code }}</b></td>
-        <td>
-          <a href="{% url 'order_detail_page' o.order_id %}">
-            {{ o.order_id }}
-          </a>
-        </td>
+        <td>{{ o.order_id }}</td>
         <td>{{ o.business_unit.name }} ({{ o.business_unit.short_code }})</td>
         <td>{{ o.buyer.name }} ({{ o.buyer.short_code }})</td>
         <td>{{ o.date }}</td>

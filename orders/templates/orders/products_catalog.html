@@ -1,0 +1,179 @@
+{% extends "orders/base.html" %}
+{% load static %}
+{% block title %}Каталог товаров{% endblock %}
+
+{% block content %}
+<style>
+  .catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .catalog-search {
+    display: grid;
+    grid-template-columns: minmax(220px, 360px) auto;
+    gap: 10px;
+  }
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .product-card {
+    display: grid;
+    gap: 16px;
+  }
+  .product-media {
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f4f3ef;
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 18px;
+  }
+  .meta-item span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-bottom: 4px;
+  }
+  .runs-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .run-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 760px) {
+    .catalog-search {
+      grid-template-columns: 1fr;
+    }
+    .meta-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+{% get_media_prefix as media_prefix %}
+
+<p class="page-kicker">Каталог / импортированные товары</p>
+<h1>Каталог реальных товаров.</h1>
+<p class="muted">
+  {% if active_business_unit %}
+    Показываем товары, импортированные для <strong>{{ active_business_unit.name }}</strong>.
+  {% else %}
+    Показываем товары по всем business unit. Для точного контекста выберите BU в верхней панели.
+  {% endif %}
+</p>
+
+<div class="catalog-toolbar">
+  <form class="catalog-search" method="get">
+    <input type="text" name="q" value="{{ catalog_query }}" placeholder="Поиск по seller SKU, WB SKU или баркоду">
+    <button type="submit">Найти</button>
+  </form>
+  <div>
+    <span class="badge">{{ products_total }} товаров</span>
+    <form method="post" action="{% url 'wb_sync_now_action' %}" style="display:inline-block;margin-left:8px;">
+      {% csrf_token %}
+      <button type="submit">Синк сейчас</button>
+    </form>
+    <a class="ghost-link" href="{% url 'wb_sync_page' %}">Открыть WB синк</a>
+  </div>
+</div>
+
+{% if product_cards %}
+  <section class="catalog-grid">
+    {% for item in product_cards %}
+      <article class="card product-card">
+        <div class="product-media">
+          {% if item.primary_photo and item.primary_photo.local_path %}
+            <img src="{{ media_prefix }}{{ item.primary_photo.local_path }}" alt="{{ item.product.seller_sku }}">
+          {% else %}
+            <span>Фото пока не загружено</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <h3>{{ item.product.seller_sku }}</h3>
+          <p class="muted">WB SKU {{ item.product.wb_sku }}</p>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span>Бренд</span>
+            <strong>{{ item.product.brand.name }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Категория</span>
+            <strong>{{ item.product.category.name }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>SKU</span>
+            <strong>{{ item.sku_count }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Фото</span>
+            <strong>{{ item.photo_count }}</strong>
+          </div>
+        </div>
+
+        {% if item.barcodes_preview %}
+          <p class="muted">Баркоды: {{ item.barcodes_preview|join:", " }}</p>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <div class="card">
+    {% if catalog_query %}
+      <h3>По запросу ничего не найдено.</h3>
+      <p class="muted">Проверьте баркод, seller SKU или WB SKU и попробуйте поиск ещё раз.</p>
+    {% else %}
+      <h3>Каталог пока пуст.</h3>
+      <p class="muted">Сначала выполните синк Wildberries, затем импортированные товары появятся здесь.</p>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if latest_sync_runs %}
+  <section style="margin-top: 36px;">
+    <h2>Последние синки</h2>
+    <div class="card">
+      <div class="runs-list">
+        {% for run in latest_sync_runs %}
+          <div class="run-item">
+            <div>
+              <strong>{{ run.business_unit.short_code }}</strong>
+              <div class="muted">{{ run.started_at|date:"d.m.Y H:i" }} · карточек {{ run.cards_total }}</div>
+            </div>
+            <span class="badge{% if run.status == 'failed' %} error{% elif run.status == 'partial' %} warn{% endif %}">
+              {{ run.get_status_display }}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}
